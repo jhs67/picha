@@ -1,0 +1,25 @@
+{
+  "name": "picha",
+  "version": "0.0.0",
+  "description": "image format codec and simple image processing",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jhs67/picha.git"
+  },
+  "keywords": [
+    "jpeg",
+    "png",
+    "image",
+    "resize",
+    "crop"
+  ],
+  "author": "Jon Spencer <jon@jonspencer.ca>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jhs67/picha/issues"
+  }
+}
