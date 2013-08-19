@@ -7,7 +7,7 @@
 
 namespace picha {
 
-	static Persistent<String>* const pixelSymbols[] {
+	static Persistent<String>* const pixelSymbols[] = {
 		&rgb_symbol, &rgba_symbol, &grey_symbol, &greya_symbol
 	};
 
@@ -19,7 +19,7 @@ namespace picha {
 	PixelMode pixelSymbolToEnum(Handle<Value> obj) {
 		for (int i = 0; i < NUM_PIXELS; ++i)
 			if (obj->StrictEquals(*pixelSymbols[i]))
-				return (PixelMode)i;
+				return static_cast<PixelMode>(i);
 		return INVALID_PIXEL;
 	}
 
@@ -35,7 +35,7 @@ namespace picha {
 			if (Buffer::HasInstance(data)) {
 				Local<Object> databuf = data->ToObject();
 				size_t len = Buffer::Length(databuf);
-				if (len >= r.stride && r.height != 0) {
+				if (len >= r.width * size_t(r.stride) && r.height != 0) {
 					r.data = Buffer::Data(databuf);
 				}
 			}

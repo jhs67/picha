@@ -1,6 +1,7 @@
 #ifndef picha_picha_h_
 #define picha_picha_h_
 
+#include <assert.h>
 #include <v8.h>
 #include <node.h>
 
@@ -22,6 +23,7 @@ namespace picha {
 	SSYMBOL(stride)\
 	SSYMBOL(pixel)\
 	SSYMBOL(data)\
+	/**/
 
 #	define SSYMBOL(a) extern Persistent<String> a ## _symbol;
 	STATIC_SYMBOLS
@@ -54,7 +56,7 @@ namespace picha {
 
 		static int pixel_size(PixelMode p) {
 			static const int sizes[] = { 3, 4, 1, 2 };
-			assert(p >= 0 && p < sizeof(sizes) / sizeof(sizes[0]));
+			assert(p >= 0 && p < int(sizeof(sizes) / sizeof(sizes[0])));
 			return sizes[p];
 		}
 

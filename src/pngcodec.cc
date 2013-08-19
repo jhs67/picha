@@ -352,7 +352,7 @@ namespace picha {
 	int pixelToPngMode(PixelMode p) {
 		static const int pngmode[] = { PNG_COLOR_TYPE_RGB, PNG_COLOR_TYPE_RGB_ALPHA,
 		PNG_COLOR_TYPE_GRAY, PNG_COLOR_TYPE_GRAY_ALPHA };
-		assert(p >= 0 && p < sizeof(pngmode) / sizeof(pngmode[0]));
+		assert(p >= 0 && p < int(sizeof(pngmode) / sizeof(pngmode[0])));
 		return pngmode[p];
 	}
 
@@ -392,7 +392,7 @@ namespace picha {
 			PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 		png_write_info(png_ptr, info_ptr);
 
-		for (png_uint_32 y = 0; y < image.height; ++y)
+		for (int y = 0; y < image.height; ++y)
 			png_write_row(png_ptr, reinterpret_cast<png_bytep>(image.data + image.stride * y));
 
 		png_write_end(png_ptr, info_ptr);
