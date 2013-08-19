@@ -17,6 +17,9 @@
     "resize",
     "crop"
   ],
+  "dependencies": {
+    "buffertools": ">=1.1.0"
+  },
   "author": "Jon Spencer <jon@jonspencer.ca>",
   "license": "MIT",
   "bugs": {
