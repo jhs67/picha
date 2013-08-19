@@ -20,6 +20,9 @@
   "dependencies": {
     "buffertools": ">=1.1.0"
   },
+  "devDependencies": {
+    "mocha": ">=1.9"
+  },
   "author": "Jon Spencer <jon@jonspencer.ca>",
   "license": "MIT",
   "bugs": {
