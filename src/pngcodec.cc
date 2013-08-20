@@ -116,7 +116,7 @@ namespace picha {
 		ctx->srclen -= length;
 	}
 
-	struct DecodeCtx : PngCtx {
+	struct PngDecodeCtx : PngCtx {
 		Persistent<Object> buffer;
 		Persistent<Function> cb;
 
@@ -128,7 +128,7 @@ namespace picha {
 		void doWork();
 	};
 
-	void DecodeCtx::doWork() {
+	void PngDecodeCtx::doWork() {
 		if (png_sig_cmp((png_bytep)readbuf.srcdata, 0, readbuf.srclen < 8 ? readbuf.srclen : 8) != 0) {
 			error = strdup("png signature mismatch");
 			return;
@@ -210,13 +210,13 @@ namespace picha {
 	}
 
 	void UV_decodePNG(uv_work_t* work_req) {
-		DecodeCtx *ctx = reinterpret_cast<DecodeCtx*>(work_req->data);
+		PngDecodeCtx *ctx = reinterpret_cast<PngDecodeCtx*>(work_req->data);
 		ctx->doWork();
 	}
 
 	void V8_decodePNG(uv_work_t* work_req, int) {
 		HandleScope scope;
-		DecodeCtx *ctx = reinterpret_cast<DecodeCtx*>(work_req->data);
+		PngDecodeCtx *ctx = reinterpret_cast<PngDecodeCtx*>(work_req->data);
 
 		char * error = ctx->error;
 		NativeImage image = ctx->image;
@@ -258,22 +258,16 @@ namespace picha {
 		Local<Object> opts = args[1]->ToObject();
 		Local<Function> cb = Local<Function>::Cast(args[2]);
 
-		PixelMode pixel = INVALID_PIXEL;
-
-		Local<Value> v = opts->Get(String::NewSymbol("pixel"));
-		if (!v->IsUndefined()) {
-			uint32_t p = v->Uint32Value();
-			if (p >= NUM_PIXELS) {
-				ThrowException(Exception::Error(String::New("opts.pixel out of range")));
-				return scope.Close(Undefined());
-			}
-			pixel = static_cast<PixelMode>(p);
+		PixelMode pixel = pixelSymbolToEnum(opts->Get(pixel_symbol));
+		if (!v->IsUndefined() && pixel == INVALID_PIXEL) {
+			ThrowException(Exception::Error(String::New("invalid pixel mode")));
+			return scope.Close(Undefined());
 		}
 
 		char* srcdata = Buffer::Data(srcbuf);
 		size_t srclen = Buffer::Length(srcbuf);
 
-		DecodeCtx * ctx = new DecodeCtx;
+		PngDecodeCtx * ctx = new PngDecodeCtx;
 		ctx->buffer = Persistent<Object>::New(srcbuf);
 		ctx->cb = Persistent<Function>::New(cb);
 		ctx->readbuf.srcdata = srcdata;
@@ -297,21 +291,16 @@ namespace picha {
 		Local<Object> srcbuf = args[0]->ToObject();
 		Local<Object> opts = args[1]->ToObject();
 
-		PixelMode pixel = INVALID_PIXEL;
-		Local<Value> v = opts->Get(String::NewSymbol("pixel"));
-		if (!v->IsUndefined()) {
-			uint32_t p = v->Uint32Value();
-			if (p >= NUM_PIXELS) {
-				ThrowException(Exception::Error(String::New("opts.pixel out of range")));
-				return scope.Close(Undefined());
-			}
-			pixel = static_cast<PixelMode>(p);
+		PixelMode pixel = pixelSymbolToEnum(opts->Get(pixel_symbol));
+		if (!v->IsUndefined() && pixel == INVALID_PIXEL) {
+			ThrowException(Exception::Error(String::New("invalid pixel mode")));
+			return scope.Close(Undefined());
 		}
 
 		char* srcdata = Buffer::Data(srcbuf);
 		size_t srclen = Buffer::Length(srcbuf);
 
-		DecodeCtx ctx;
+		PngDecodeCtx ctx;
 		ctx.readbuf.srcdata = srcdata;
 		ctx.readbuf.srclen = srclen;
 		ctx.pixel = pixel;
@@ -335,8 +324,8 @@ namespace picha {
 	//----------------------------------------------------------------------------------------------------------------
 	//--
 
-	struct EncodeCtx : PngCtx {
-		EncodeCtx() : dstdata(0) {}
+	struct PngEncodeCtx : PngCtx {
+		PngEncodeCtx() : dstdata(0) {}
 
 		Persistent<Value> buffer;
 		Persistent<Function> cb;
@@ -364,7 +353,7 @@ namespace picha {
 	void pngFlush(png_structp png_ptr) {
 	}
 
-	void EncodeCtx::doWork() {
+	void PngEncodeCtx::doWork() {
 		png_infop info_ptr = 0;
 		png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
 		if (png_ptr == 0) {
@@ -403,13 +392,13 @@ namespace picha {
 	}
 
 	void UV_encodePNG(uv_work_t* work_req) {
-		EncodeCtx *ctx = reinterpret_cast<EncodeCtx*>(work_req->data);
+		PngEncodeCtx *ctx = reinterpret_cast<PngEncodeCtx*>(work_req->data);
 		ctx->doWork();
 	}
 
 	void V8_encodePNG(uv_work_t* work_req, int) {
 		HandleScope scope;
-		EncodeCtx *ctx = reinterpret_cast<EncodeCtx*>(work_req->data);
+		PngEncodeCtx *ctx = reinterpret_cast<PngEncodeCtx*>(work_req->data);
 
 		char * error = ctx->error;
 		size_t dstlen = ctx->dstlen;
@@ -452,7 +441,7 @@ namespace picha {
 		Local<Object> img = args[0]->ToObject();
 		Local<Function> cb = Local<Function>::Cast(args[1]);
 
-		EncodeCtx * ctx = new EncodeCtx;
+		PngEncodeCtx * ctx = new PngEncodeCtx;
 		ctx->image = jsImageToNativeImage(img);
 		if (!ctx->image.data) {
 			delete ctx;
@@ -460,7 +449,7 @@ namespace picha {
 			return scope.Close(Undefined());
 		}
 
-		ctx->buffer = Persistent<Value>::New(img->Get(String::NewSymbol("data")));
+		ctx->buffer = Persistent<Value>::New(img->Get(data_symbol));
 		ctx->cb = Persistent<Function>::New(cb);
 
 		uv_work_t* work_req = new uv_work_t();
@@ -479,7 +468,7 @@ namespace picha {
 		}
 		Local<Object> img = args[0]->ToObject();
 
-		EncodeCtx ctx;
+		PngEncodeCtx ctx;
 		ctx.image = jsImageToNativeImage(img);
 		if (!ctx.image.data) {
 			ThrowException(Exception::Error(String::New("invalid image")));
