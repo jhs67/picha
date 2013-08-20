@@ -22,3 +22,23 @@ var encodePng = exports.encodePng = function(img, cb) {
 var encodePngSync = exports.encodePngSync = function(img) {
 	return picha.encodePngSync(img);
 }
+
+var decodeJpeg = exports.decodeJpeg = function(buf, opt, cb) {
+	if (typeof opt === 'function') cb = opt, opt = {};
+	picha.decodeJpeg(buf, function(err, img) {
+		cb(err, img && new Image(img));
+	})
+}
+
+var decodeJpegSync = exports.decodeJpegSync = function(buf) {
+	return new Image(picha.decodeJpegSync(buf));
+}
+
+var encodeJpeg = exports.encodeJpeg = function(img, opt, cb) {
+	if (typeof opt === 'function') cb = opt, opt = {};
+	picha.encodeJpeg(img, opt, cb);
+}
+
+var encodeJpegSync = exports.encodeJpegSync = function(img, opt) {
+	return picha.encodeJpegSync(img, opt || {});
+}

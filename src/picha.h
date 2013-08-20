@@ -23,6 +23,7 @@ namespace picha {
 	SSYMBOL(stride)\
 	SSYMBOL(pixel)\
 	SSYMBOL(data)\
+	SSYMBOL(quality)\
 	/**/
 
 #	define SSYMBOL(a) extern Persistent<String> a ## _symbol;

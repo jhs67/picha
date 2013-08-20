@@ -5,6 +5,7 @@
 			'sources': [
 				'src/picha.cc',
 				'src/pngcodec.cc',
+				'src/jpegcodec.cc',
 			],
 			'cflags': [
 				'<!@(pkg-config libpng --cflags)',
@@ -15,10 +16,11 @@
 			],
 			'libraries': [
 				'<!@(pkg-config libpng --libs-only-l)',
+				'-ljpeg',
 			],
 			'xcode_settings': {
-				'OTHER_CFLAGS': [ '<!@(pkg-config libpng --cflags)' ],
-				'OTHER_LDFLAGS': [ '<!@(pkg-config libpng --libs-only-L --libs-only-other)' ],
+				'OTHER_CFLAGS': [ '<!@(pkg-config libpng --cflags)', '-I /opt/local/include' ],
+				'OTHER_LDFLAGS': [ '<!@(pkg-config libpng --libs-only-L --libs-only-other)', '-L/opt/local/lib' ],
 			},
 		},
 	],

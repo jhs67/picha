@@ -4,6 +4,7 @@
 
 #include "picha.h"
 #include "pngcodec.h"
+#include "jpegcodec.h"
 
 namespace picha {
 
@@ -74,6 +75,10 @@ namespace picha {
 		NODE_SET_METHOD(target, "encodePng", encodePng);
 		NODE_SET_METHOD(target, "decodePngSync", decodePngSync);
 		NODE_SET_METHOD(target, "encodePngSync", encodePngSync);
+		NODE_SET_METHOD(target, "decodeJpeg", decodeJpeg);
+		NODE_SET_METHOD(target, "encodeJpeg", encodeJpeg);
+		NODE_SET_METHOD(target, "decodeJpegSync", decodeJpegSync);
+		NODE_SET_METHOD(target, "encodeJpegSync", encodeJpegSync);
 	}
 
 }
