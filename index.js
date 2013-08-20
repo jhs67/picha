@@ -17,7 +17,8 @@ var decodePngSync = exports.decodePngSync = function(buf, opt) {
 	return new Image(picha.decodePngSync(buf, opt || {}));
 }
 
-var encodePng = exports.encodePng = function(img, cb) {
+var encodePng = exports.encodePng = function(img, opt, cb) {
+	if (typeof opt === 'function') cb = opt, opt = {};
 	picha.encodePng(img, cb);
 }
 
@@ -45,4 +46,45 @@ var encodeJpeg = exports.encodeJpeg = function(img, opt, cb) {
 
 var encodeJpegSync = exports.encodeJpegSync = function(img, opt) {
 	return picha.encodeJpegSync(img, opt || {});
+}
+
+
+const decoders = [
+	{ decode: decodeJpeg, decodeSync: decodeJpegSync, stat: statJpeg, mimetype: "image/jpeg" },
+	{ decode: decodePng, decodeSync: decodePngSync, stat: statPng, mimetype: "image/png" },
+];
+
+var stat = exports.stat = function(buf) {
+	for (var idx = 0; idx < decoders.length; ++idx) {
+		var stat = decoders[idx].stat(buf);
+		if (stat) {
+			stat.mimetype = decoders[idx].mimetype;
+			return stat;
+		}
+	}
+}
+
+var decode = exports.decode = function(buf, opt, cb) {
+	if (typeof opt === 'function') cb = opt, opt = {};
+	tryNext(0);
+
+	function tryNext(idx) {
+		if (idx == decoders.length) return cb(new Error("unsupported image file"));
+		decoders[idx].decode(buf, opt, function(err, img) {
+			if (!err && img) return cb(err, img);
+			tryNext(idx + 1);
+		});
+	}
+}
+
+var decodeSync = exports.decodeSync = function(buf, opt) {
+	for (var idx = 0; idx < decoders.length; ++idx) {
+		try {
+			var img = decodeSync(buf, opt || {});
+			if (img) return img;
+		}
+		catch (e) {
+		}
+	}
+	throw new Error("unsupported image file")
 }
