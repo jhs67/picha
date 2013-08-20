@@ -72,6 +72,8 @@ namespace picha {
 
 	NativeImage jsImageToNativeImage(Local<Object>& jimg);
 	Local<Object> nativeImageToJsImage(NativeImage& cimg);
+	PixelMode pixelSymbolToEnum(Handle<Value> obj);
+	Handle<Value> pixelEnumToSymbol(PixelMode t);
 
 }
 

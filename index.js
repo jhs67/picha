@@ -4,6 +4,8 @@ var picha = require('./build/Release/picha.node');
 
 var Image = exports.Image = image.Image;
 
+var statPng = exports.statPng = picha.statPng;
+
 var decodePng = exports.decodePng = function(buf, opt, cb) {
 	if (typeof opt === 'function') cb = opt, opt = {};
 	picha.decodePng(buf, opt, function(err, img) {
@@ -22,6 +24,8 @@ var encodePng = exports.encodePng = function(img, cb) {
 var encodePngSync = exports.encodePngSync = function(img) {
 	return picha.encodePngSync(img);
 }
+
+var statJpeg = exports.statJpeg = picha.statJpeg;
 
 var decodeJpeg = exports.decodeJpeg = function(buf, opt, cb) {
 	if (typeof opt === 'function') cb = opt, opt = {};

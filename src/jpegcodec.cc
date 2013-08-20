@@ -66,6 +66,34 @@ namespace picha {
 		jpeg_destroy_decompress(&cinfo);
 	}
 
+	bool doJpegStat(char * buf, size_t len, int& width, int& height, PixelMode& pixel) {
+		jpeg_error_mgr jerr;
+		jpeg_decompress_struct cinfo;
+
+		JpegCtx ctx;
+		cinfo.err = jpeg_std_error(&jerr);
+		cinfo.err->error_exit = &JpegCtx::onError;
+		cinfo.client_data = &ctx;
+
+		jpeg_create_decompress(&cinfo);
+		jpeg_mem_src(&cinfo, reinterpret_cast<unsigned char*>(buf), len);
+
+		if (setjmp(ctx.jmpbuf)) {
+			jpeg_destroy_decompress(&cinfo);
+			free(ctx.error);
+			return false;
+		}
+
+		jpeg_read_header(&cinfo, true);
+
+		width = cinfo.image_width;
+		height = cinfo.image_height;
+		pixel = RGB_PIXEL;
+
+		jpeg_destroy_decompress(&cinfo);
+		return true;
+	}
+
 	void UV_decodeJpeg(uv_work_t* work_req) {
 		JpegDecodeCtx *ctx = reinterpret_cast<JpegDecodeCtx*>(work_req->data);
 		ctx->doWork();
@@ -158,6 +186,29 @@ namespace picha {
 		}
 
 		ctx.image.free();
+		return scope.Close(r);
+	}
+
+	Handle<Value> statJpeg(const Arguments& args) {
+		HandleScope scope;
+
+		if (args.Length() != 1 || !Buffer::HasInstance(args[0])) {
+			ThrowException(Exception::Error(String::New("expected: statJpeg(srcbuffer)")));
+			return scope.Close(Undefined());
+		}
+		Local<Object> srcbuf = args[0]->ToObject();
+
+		PixelMode pixel;
+		int width, height;
+		Local<Value> r = *Undefined();
+		if (doJpegStat(Buffer::Data(srcbuf), Buffer::Length(srcbuf), width, height, pixel)) {
+			Local<Object> stat = Object::New();
+			stat->Set(width_symbol, Integer::New(width));
+			stat->Set(height_symbol, Integer::New(height));
+			stat->Set(pixel_symbol, pixelEnumToSymbol(pixel));
+			r = stat;
+		}
+
 		return scope.Close(r);
 	}
 

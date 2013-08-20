@@ -209,6 +209,52 @@ namespace picha {
 		delete[] rows;
 	}
 
+	bool doPngStat(char * buf, size_t len, int& width, int& height, PixelMode& pixel) {
+		ReadBuffer readbuf;
+		readbuf.srclen = len;
+		readbuf.srcdata = buf;
+		if (png_sig_cmp((png_bytep)readbuf.srcdata, 0, readbuf.srclen < 8 ? readbuf.srclen : 8) != 0)
+			return false;
+
+		png_infop info_ptr = 0;
+		png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, 0, 0, 0);
+		if (png_ptr == 0)
+			return false;
+
+		PngCtx ctx;
+		png_set_error_fn(png_ptr, &ctx, PngCtx::onError, PngCtx::onWarn);
+		if (setjmp(png_jmpbuf(png_ptr))) {
+			png_destroy_read_struct(&png_ptr, &info_ptr, 0);
+			free(ctx.error);
+			return false;
+		}
+
+		info_ptr = png_create_info_struct(png_ptr);
+		if (info_ptr == 0) {
+			png_destroy_read_struct(&png_ptr, &info_ptr, 0);
+			return false;
+		}
+
+		png_set_read_fn(png_ptr, &readbuf, do_read_record);
+		png_read_info(png_ptr, info_ptr);
+
+		png_byte color = png_get_color_type(png_ptr, info_ptr);
+		if ((color & (PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE)) && (color & PNG_COLOR_MASK_ALPHA))
+			pixel = RGBA_PIXEL;
+		else if ((color & (PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE)))
+			pixel = RGB_PIXEL;
+		else if ((color & PNG_COLOR_MASK_ALPHA))
+			pixel = GREYA_PIXEL;
+		else
+			pixel = GREY_PIXEL;
+
+		width = png_get_image_width(png_ptr, info_ptr);
+		height = png_get_image_height(png_ptr, info_ptr);
+
+		png_destroy_read_struct(&png_ptr, &info_ptr, 0);
+		return true;
+	}
+
 	void UV_decodePNG(uv_work_t* work_req) {
 		PngDecodeCtx *ctx = reinterpret_cast<PngDecodeCtx*>(work_req->data);
 		ctx->doWork();
@@ -258,8 +304,9 @@ namespace picha {
 		Local<Object> opts = args[1]->ToObject();
 		Local<Function> cb = Local<Function>::Cast(args[2]);
 
-		PixelMode pixel = pixelSymbolToEnum(opts->Get(pixel_symbol));
-		if (!v->IsUndefined() && pixel == INVALID_PIXEL) {
+		Local<Value> jpixel = opts->Get(pixel_symbol);
+		PixelMode pixel = pixelSymbolToEnum(jpixel);
+		if (!jpixel->IsUndefined() && pixel == INVALID_PIXEL) {
 			ThrowException(Exception::Error(String::New("invalid pixel mode")));
 			return scope.Close(Undefined());
 		}
@@ -291,8 +338,9 @@ namespace picha {
 		Local<Object> srcbuf = args[0]->ToObject();
 		Local<Object> opts = args[1]->ToObject();
 
-		PixelMode pixel = pixelSymbolToEnum(opts->Get(pixel_symbol));
-		if (!v->IsUndefined() && pixel == INVALID_PIXEL) {
+		Local<Value> jpixel = opts->Get(pixel_symbol);
+		PixelMode pixel = pixelSymbolToEnum(jpixel);
+		if (!jpixel->IsUndefined() && pixel == INVALID_PIXEL) {
 			ThrowException(Exception::Error(String::New("invalid pixel mode")));
 			return scope.Close(Undefined());
 		}
@@ -317,6 +365,29 @@ namespace picha {
 		}
 
 		ctx.image.free();
+		return scope.Close(r);
+	}
+
+	Handle<Value> statPng(const Arguments& args) {
+		HandleScope scope;
+
+		if (args.Length() != 1 || !Buffer::HasInstance(args[0])) {
+			ThrowException(Exception::Error(String::New("expected: statPng(buffer)")));
+			return scope.Close(Undefined());
+		}
+		Local<Object> srcbuf = args[0]->ToObject();
+
+		PixelMode pixel;
+		int width, height;
+		Local<Value> r = *Undefined();
+		if (doPngStat(Buffer::Data(srcbuf), Buffer::Length(srcbuf), width, height, pixel)) {
+			Local<Object> stat = Object::New();
+			stat->Set(width_symbol, Integer::New(width));
+			stat->Set(height_symbol, Integer::New(height));
+			stat->Set(pixel_symbol, pixelEnumToSymbol(pixel));
+			r = stat;
+		}
+
 		return scope.Close(r);
 	}
 

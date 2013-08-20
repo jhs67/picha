@@ -71,13 +71,16 @@ namespace picha {
 		STATIC_SYMBOLS
 #		undef SSYMBOL
 
+		NODE_SET_METHOD(target, "statPng", statPng);
 		NODE_SET_METHOD(target, "decodePng", decodePng);
-		NODE_SET_METHOD(target, "encodePng", encodePng);
 		NODE_SET_METHOD(target, "decodePngSync", decodePngSync);
+		NODE_SET_METHOD(target, "encodePng", encodePng);
 		NODE_SET_METHOD(target, "encodePngSync", encodePngSync);
+
+		NODE_SET_METHOD(target, "statJpeg", statJpeg);
 		NODE_SET_METHOD(target, "decodeJpeg", decodeJpeg);
-		NODE_SET_METHOD(target, "encodeJpeg", encodeJpeg);
 		NODE_SET_METHOD(target, "decodeJpegSync", decodeJpegSync);
+		NODE_SET_METHOD(target, "encodeJpeg", encodeJpeg);
 		NODE_SET_METHOD(target, "encodeJpegSync", encodeJpegSync);
 	}
 

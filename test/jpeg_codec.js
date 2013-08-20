@@ -15,6 +15,13 @@ describe('jpeg_codec', function() {
 				done(err);
 			});
 		});
+		it("should stat correctly", function() {
+			var stat = picha.statJpeg(file);
+			assert.notEqual(stat, null);
+			assert.equal(stat.width, 50);
+			assert.equal(stat.height, 50);
+			assert.equal(stat.pixel, 'rgb');
+		});
 		it("should async decode", function(done) {
 			picha.decodeJpeg(file, function(err, image) {
 				asyncImage = image;

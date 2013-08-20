@@ -5,10 +5,11 @@
 
 namespace picha {
 
-	Handle<Value> encodePng(const Arguments& args);
+	Handle<Value> statPng(const Arguments& args);
 	Handle<Value> decodePng(const Arguments& args);
-	Handle<Value> encodePngSync(const Arguments& args);
 	Handle<Value> decodePngSync(const Arguments& args);
+	Handle<Value> encodePng(const Arguments& args);
+	Handle<Value> encodePngSync(const Arguments& args);
 
 }
 
