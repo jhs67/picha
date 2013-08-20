@@ -271,7 +271,7 @@ namespace picha {
 
 		Local<Value> e, r;
 		if (error) {
-			e = String::New(error);
+			e = Exception::Error(String::New(error));
 			r = *Undefined();
 		}
 		else {
@@ -479,7 +479,7 @@ namespace picha {
 
 		Local<Value> e, r;
 		if (error) {
-			e = String::New(error);
+			e = Exception::Error(String::New(error));
 			r = *Undefined();
 		}
 		else {
