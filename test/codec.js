@@ -36,15 +36,27 @@ describe('codec', function() {
 			assert.equal(pngStat.pixel, 'rgba');
 			assert.equal(pngStat.mimetype, 'image/png');
 		});
+		var jpegImage;
 		it("should jpeg async decode", function(done) {
 			picha.decode(jpegFile, function(err, image) {
+				jpegImage = image;
 				done(err);
 			});
 		});
+		it("should jpeg sync decode", function() {
+			var image = picha.decodeSync(jpegFile);
+			assert(image.equalPixels(jpegImage));
+		});
+		var pngImage;
 		it("should png async decode", function(done) {
 			picha.decode(pngFile, function(err, image) {
+				pngImage = image;
 				done(err);
 			});
+		});
+		it("should png sync decode", function() {
+			var image = picha.decodeSync(pngFile);
+			assert(image.equalPixels(pngImage));
 		});
 	})
 })

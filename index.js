@@ -80,7 +80,7 @@ var decode = exports.decode = function(buf, opt, cb) {
 var decodeSync = exports.decodeSync = function(buf, opt) {
 	for (var idx = 0; idx < decoders.length; ++idx) {
 		try {
-			var img = decodeSync(buf, opt || {});
+			var img = decoders[idx].decodeSync(buf, opt || {});
 			if (img) return img;
 		}
 		catch (e) {
