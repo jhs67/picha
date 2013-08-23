@@ -6,6 +6,7 @@
 				'src/picha.cc',
 				'src/pngcodec.cc',
 				'src/jpegcodec.cc',
+				'src/colorconvert.cc',
 			],
 			'cflags': [
 				'<!@(pkg-config libpng --cflags)',

@@ -5,8 +5,18 @@
 #include "picha.h"
 #include "pngcodec.h"
 #include "jpegcodec.h"
+#include "colorconvert.h"
 
 namespace picha {
+
+	void NativeImage::copy(NativeImage& o) {
+		assert(o.width == width);
+		assert(o.height == height);
+		assert(o.pixel == pixel);
+		int rw = width * pixel_size(pixel);
+		for (int h = 0; h < height; ++h)
+			memcpy(row(h), o.row(h), rw);
+	}
 
 	static Persistent<String>* const pixelSymbols[] = {
 		&rgb_symbol, &rgba_symbol, &grey_symbol, &greya_symbol
@@ -82,6 +92,9 @@ namespace picha {
 		NODE_SET_METHOD(target, "decodeJpegSync", decodeJpegSync);
 		NODE_SET_METHOD(target, "encodeJpeg", encodeJpeg);
 		NODE_SET_METHOD(target, "encodeJpegSync", encodeJpegSync);
+
+		NODE_SET_METHOD(target, "colorConvert", colorConvert);
+		NODE_SET_METHOD(target, "colorConvertSync", colorConvertSync);
 	}
 
 }

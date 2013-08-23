@@ -24,6 +24,9 @@ namespace picha {
 	SSYMBOL(pixel)\
 	SSYMBOL(data)\
 	SSYMBOL(quality)\
+	SSYMBOL(redWeight)\
+	SSYMBOL(greenWeight)\
+	SSYMBOL(blueWeight)\
 	/**/
 
 #	define SSYMBOL(a) extern Persistent<String> a ## _symbol;
@@ -68,8 +71,11 @@ namespace picha {
 			return (s + 3) & ~3;
 		}
 
+		void clone(NativeImage& o) { alloc(o.width, o.height, o.pixel); copy(o); }
+		void copy(NativeImage& o);
 		void alloc(int w, int h, PixelMode p) { width = w; height = h; pixel = p; stride = row_stride(w, p); data = new PixelType[stride * h]; }
 		void free() { delete[] data; data = 0; width = 0; height = 0; stride = 0; pixel = INVALID_PIXEL; }
+		int dataSize() { return stride * height; }
 	};
 
 	NativeImage jsImageToNativeImage(Local<Object>& jimg);
