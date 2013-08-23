@@ -224,7 +224,7 @@ namespace picha {
 
 		NativeImage image;
 
-		char *dstdata;
+		PixelType *dstdata;
 		size_t dstlen;
 		float quality;
 
@@ -254,14 +254,14 @@ namespace picha {
         fflush(stdout);
 
 		for (int y = 0; y < image.height; ++y) {
-			char * p = image.row(y);
+			PixelType * p = image.row(y);
 			jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(&p), 1);
 		}
 
         jpeg_finish_compress(&cinfo);
 		jpeg_destroy_compress(&cinfo);
 
-		dstdata = reinterpret_cast<char*>(outbuffer);
+		dstdata = reinterpret_cast<PixelType*>(outbuffer);
 		dstlen = outsize;
 	}
 
@@ -276,7 +276,7 @@ namespace picha {
 
 		char * error = ctx->error;
 		size_t dstlen = ctx->dstlen;
-		char * dstdata = ctx->dstdata;
+		PixelType * dstdata = ctx->dstdata;
 		Local<Function> cb = Local<Function>::New(ctx->cb);
 		delete ctx;
 
@@ -287,7 +287,7 @@ namespace picha {
 		}
 		else {
 			e = *Undefined();
-			Buffer *buf = Buffer::New(dstdata, dstlen);
+			Buffer *buf = Buffer::New(reinterpret_cast<const char*>(dstdata), dstlen);
 			r = Local<Value>::New(buf->handle_);
 		}
 
@@ -379,7 +379,7 @@ namespace picha {
 			free(ctx.error);
 		}
 		else {
-			Buffer *buf = Buffer::New(ctx.dstdata, ctx.dstlen);
+			Buffer *buf = Buffer::New(reinterpret_cast<const char*>(ctx.dstdata), ctx.dstlen);
 			r = Local<Value>::New(buf->handle_);
 		}
 

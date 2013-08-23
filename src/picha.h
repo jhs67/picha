@@ -45,15 +45,17 @@ namespace picha {
 		NUM_PIXELS
 	};
 
+	typedef uint8_t PixelType;
+
 	struct NativeImage {
-		char * data;
+		PixelType * data;
 		int stride;
 		int width, height;
 		PixelMode pixel;
 
 		NativeImage() : data(0), stride(0), width(0), height(0), pixel(INVALID_PIXEL) {}
 
-		char * row(int y) const { return data + y * stride; }
+		PixelType * row(int y) const { return data + y * stride; }
 
 		static int pixel_size(PixelMode p) {
 			static const int sizes[] = { 3, 4, 1, 2 };
@@ -66,7 +68,7 @@ namespace picha {
 			return (s + 3) & ~3;
 		}
 
-		void alloc(int w, int h, PixelMode p) { width = w; height = h; pixel = p; stride = row_stride(w, p); data = new char[stride * h]; }
+		void alloc(int w, int h, PixelMode p) { width = w; height = h; pixel = p; stride = row_stride(w, p); data = new PixelType[stride * h]; }
 		void free() { delete[] data; data = 0; width = 0; height = 0; stride = 0; pixel = INVALID_PIXEL; }
 	};
 
