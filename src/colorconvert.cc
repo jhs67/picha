@@ -144,6 +144,7 @@ namespace picha {
 					case RGB_PIXEL : ColorConverter<RGBA_PIXEL, RGB_PIXEL>::op(cs, src, dst); return;
 					case GREYA_PIXEL : ColorConverter<RGBA_PIXEL, GREYA_PIXEL>::op(cs, src, dst); return;
 					case GREY_PIXEL : ColorConverter<RGBA_PIXEL, GREY_PIXEL>::op(cs, src, dst); return;
+					default: break;
 				}
 				break;
 			case RGB_PIXEL :
@@ -151,6 +152,7 @@ namespace picha {
 					case RGBA_PIXEL : ColorConverter<RGB_PIXEL, RGBA_PIXEL>::op(cs, src, dst); return;
 					case GREYA_PIXEL : ColorConverter<RGB_PIXEL, GREYA_PIXEL>::op(cs, src, dst); return;
 					case GREY_PIXEL : ColorConverter<RGB_PIXEL, GREY_PIXEL>::op(cs, src, dst); return;
+					default: break;
 				}
 				break;
 			case GREYA_PIXEL :
@@ -158,6 +160,7 @@ namespace picha {
 					case RGBA_PIXEL : ColorConverter<GREYA_PIXEL, RGBA_PIXEL>::op(cs, src, dst); return;
 					case RGB_PIXEL : ColorConverter<GREYA_PIXEL, RGB_PIXEL>::op(cs, src, dst); return;
 					case GREY_PIXEL : ColorConverter<GREYA_PIXEL, GREY_PIXEL>::op(cs, src, dst); return;
+					default: break;
 				}
 				break;
 			case GREY_PIXEL :
@@ -165,8 +168,10 @@ namespace picha {
 					case RGBA_PIXEL : ColorConverter<GREY_PIXEL, RGBA_PIXEL>::op(cs, src, dst); return;
 					case RGB_PIXEL : ColorConverter<GREY_PIXEL, RGB_PIXEL>::op(cs, src, dst); return;
 					case GREYA_PIXEL : ColorConverter<GREY_PIXEL, GREYA_PIXEL>::op(cs, src, dst); return;
+					default: break;
 				}
 				break;
+			default: break;
 		}
 
 		dst.clone(src);
