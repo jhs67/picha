@@ -46,7 +46,7 @@ namespace picha {
 			if (Buffer::HasInstance(data)) {
 				Local<Object> databuf = data->ToObject();
 				size_t len = Buffer::Length(databuf);
-				if (len >= r.width * size_t(r.stride) && r.height != 0) {
+				if (len >= r.height * size_t(r.stride) && r.height != 0) {
 					r.data = reinterpret_cast<PixelType*>(Buffer::Data(databuf));
 				}
 			}
