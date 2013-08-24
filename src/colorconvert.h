@@ -10,4 +10,4 @@ namespace picha {
 
 }
 
-#endif // picha_jpegcodec_h_
+#endif // picha_colorconvert_h_

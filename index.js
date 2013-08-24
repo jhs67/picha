@@ -4,6 +4,16 @@ var picha = require('./build/Release/picha.node');
 
 var Image = exports.Image = image.Image;
 
+var resize = exports.resize = function(src, opt, cb) {
+	picha.resize(src, opt, function(err, dst) {
+		return cb(err, dst && new Image(dst));
+	});
+}
+
+var resizeSync = exports.resizeSync = function(img, opt) {
+	return new Image(picha.resizeSync(img, opt));
+}
+
 var colorConvert = exports.colorConvert = function(src, opt, cb) {
 	picha.colorConvert(src, opt, function(err, dst) {
 		return cb(err, dst && new Image(dst));

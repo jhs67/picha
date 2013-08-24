@@ -6,6 +6,7 @@
 #include "pngcodec.h"
 #include "jpegcodec.h"
 #include "colorconvert.h"
+#include "resize.h"
 
 namespace picha {
 
@@ -70,6 +71,21 @@ namespace picha {
 		return image;
 	}
 
+	Local<Object> newJsImage(int w, int h, PixelMode pixel) {
+		int stride = NativeImage::row_stride(w, pixel);
+		Local<Object> image = Object::New();
+		image->Set(width_symbol, Integer::New(w));
+		image->Set(height_symbol, Integer::New(h));
+		image->Set(stride_symbol, Integer::New(stride));
+		image->Set(pixel_symbol, pixelEnumToSymbol(pixel));
+
+		size_t datalen = h * stride;
+		Buffer *pixelbuf = Buffer::New(datalen);
+		image->Set(data_symbol, pixelbuf->handle_);
+
+		return image;
+	}
+
 
 
 #	define SSYMBOL(a) Persistent<String> a ## _symbol;
@@ -95,6 +111,9 @@ namespace picha {
 
 		NODE_SET_METHOD(target, "colorConvert", colorConvert);
 		NODE_SET_METHOD(target, "colorConvertSync", colorConvertSync);
+
+		NODE_SET_METHOD(target, "resize", resize);
+		NODE_SET_METHOD(target, "resizeSync", resizeSync);
 	}
 
 }

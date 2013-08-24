@@ -3,13 +3,6 @@
 
 namespace picha {
 
-	template<PixelMode Src> struct PixelWidth;
-
-	template<> struct PixelWidth<RGBA_PIXEL> { static const int value = 4; };
-	template<> struct PixelWidth<RGB_PIXEL> { static const int value = 3; };
-	template<> struct PixelWidth<GREYA_PIXEL> { static const int value = 2; };
-	template<> struct PixelWidth<GREY_PIXEL> { static const int value = 1; };
-
 	struct ColorSettings {
 		ColorSettings() : rFactor(0.299f), gFactor(0.587f), bFactor(0.114) {}
 		float rFactor, gFactor, bFactor;

@@ -27,6 +27,14 @@ namespace picha {
 	SSYMBOL(redWeight)\
 	SSYMBOL(greenWeight)\
 	SSYMBOL(blueWeight)\
+	SSYMBOL(filter)\
+	SSYMBOL(filterScale)\
+	SSYMBOL(cubic)\
+	SSYMBOL(lanczos)\
+	SSYMBOL(catmulrom)\
+	SSYMBOL(mitchel)\
+	SSYMBOL(triangle)\
+	SSYMBOL(box)\
 	/**/
 
 #	define SSYMBOL(a) extern Persistent<String> a ## _symbol;
@@ -47,6 +55,13 @@ namespace picha {
 
 		NUM_PIXELS
 	};
+
+	template<PixelMode Src> struct PixelWidth;
+
+	template<> struct PixelWidth<RGBA_PIXEL> { static const int value = 4; };
+	template<> struct PixelWidth<RGB_PIXEL> { static const int value = 3; };
+	template<> struct PixelWidth<GREYA_PIXEL> { static const int value = 2; };
+	template<> struct PixelWidth<GREY_PIXEL> { static const int value = 1; };
 
 	typedef uint8_t PixelType;
 
@@ -79,6 +94,7 @@ namespace picha {
 	};
 
 	NativeImage jsImageToNativeImage(Local<Object>& jimg);
+	Local<Object> newJsImage(int w, int h, PixelMode pixel);
 	Local<Object> nativeImageToJsImage(NativeImage& cimg);
 	PixelMode pixelSymbolToEnum(Handle<Value> obj);
 	Handle<Value> pixelEnumToSymbol(PixelMode t);

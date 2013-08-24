@@ -7,6 +7,7 @@
 				'src/pngcodec.cc',
 				'src/jpegcodec.cc',
 				'src/colorconvert.cc',
+				'src/resize.cc',
 			],
 			'cflags': [
 				'<!@(pkg-config libpng --cflags)',
