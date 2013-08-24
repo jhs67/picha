@@ -11,125 +11,79 @@
 
 namespace picha {
 
-	struct JpegCtx {
-		char *error;
+	struct JpegReader {
+		bool isopen;
+		char * error;
 		jmp_buf jmpbuf;
+		jpeg_error_mgr jerr;
+		jpeg_decompress_struct cinfo;
 
-		JpegCtx() : error(0) {}
+		JpegReader() : isopen(false), error(0) {}
+		~JpegReader() { close(); if (error) free(error); }
+
+		void close() {
+			if (isopen) jpeg_destroy_decompress(&cinfo);
+			isopen = false;
+		}
+
+		void open(char * buf, size_t len) {
+			cinfo.err = jpeg_std_error(&jerr);
+			cinfo.err->error_exit = &JpegReader::onError;
+			cinfo.client_data = this;
+
+			jpeg_create_decompress(&cinfo);
+			jpeg_mem_src(&cinfo, reinterpret_cast<unsigned char*>(buf), len);
+			isopen = true;
+
+			if (setjmp(jmpbuf))
+				return;
+
+			jpeg_read_header(&cinfo, true);
+		}
+
+		void decode(const NativeImage &dst) {
+			assert(dst.pixel == RGB_PIXEL);
+
+			jpeg_start_decompress(&cinfo);
+			for(int y = 0; y < dst.height; ++y) {
+				JSAMPLE* p = (JSAMPLE*)(dst.row(y));
+				jpeg_read_scanlines(&cinfo, &p, 1);
+			}
+			jpeg_finish_decompress(&cinfo);
+		}
+
+		int width() { return cinfo.image_width; }
+
+		int height() { return cinfo.image_height; }
 
 		static void onError(j_common_ptr cinfo) {
 			char errbuf[JMSG_LENGTH_MAX];
-			JpegCtx* self = (JpegCtx*)cinfo->client_data;
+			JpegReader* self = (JpegReader*)cinfo->client_data;
 			cinfo->err->format_message(cinfo, errbuf);
 			self->error = strdup(errbuf);
 			longjmp(self->jmpbuf, 1);
 		}
 	};
 
-	struct JpegDecodeCtx : JpegCtx {
-		Persistent<Object> buffer;
+	struct JpegDecodeCtx {
+		Persistent<Value> dstimage;
+		Persistent<Value> buffer;
 		Persistent<Function> cb;
 
-		char * srcdata;
-		int srclen;
-
-		NativeImage image;
-
-		void doWork();
+		JpegReader reader;
+		NativeImage dst;
 	};
-
-	void JpegDecodeCtx::doWork() {
-		jpeg_error_mgr jerr;
-		jpeg_decompress_struct cinfo;
-
-		cinfo.err = jpeg_std_error(&jerr);
-		cinfo.err->error_exit = &JpegCtx::onError;
-		cinfo.client_data = this;
-
-		jpeg_create_decompress(&cinfo);
-		jpeg_mem_src(&cinfo, reinterpret_cast<unsigned char*>(srcdata), srclen);
-
-		if (setjmp(jmpbuf)) {
-			jpeg_destroy_decompress(&cinfo);
-			return;
-		}
-
-		jpeg_read_header(&cinfo, true);
-		image.alloc(cinfo.image_width, cinfo.image_height, RGB_PIXEL);
-
-		jpeg_start_decompress(&cinfo);
-		for(int y = 0; y < image.height; ++y) {
-			JSAMPLE* p = (JSAMPLE*)(image.row(y));
-			jpeg_read_scanlines(&cinfo, &p, 1);
-		}
-		jpeg_finish_decompress(&cinfo);
-		jpeg_destroy_decompress(&cinfo);
-	}
-
-	bool doJpegStat(char * buf, size_t len, int& width, int& height, PixelMode& pixel) {
-		jpeg_error_mgr jerr;
-		jpeg_decompress_struct cinfo;
-
-		JpegCtx ctx;
-		cinfo.err = jpeg_std_error(&jerr);
-		cinfo.err->error_exit = &JpegCtx::onError;
-		cinfo.client_data = &ctx;
-
-		jpeg_create_decompress(&cinfo);
-		jpeg_mem_src(&cinfo, reinterpret_cast<unsigned char*>(buf), len);
-
-		if (setjmp(ctx.jmpbuf)) {
-			jpeg_destroy_decompress(&cinfo);
-			free(ctx.error);
-			return false;
-		}
-
-		jpeg_read_header(&cinfo, true);
-
-		width = cinfo.image_width;
-		height = cinfo.image_height;
-		pixel = RGB_PIXEL;
-
-		jpeg_destroy_decompress(&cinfo);
-		return true;
-	}
 
 	void UV_decodeJpeg(uv_work_t* work_req) {
 		JpegDecodeCtx *ctx = reinterpret_cast<JpegDecodeCtx*>(work_req->data);
-		ctx->doWork();
+		ctx->reader.decode(ctx->dst);
 	}
 
 	void V8_decodeJpeg(uv_work_t* work_req, int) {
 		HandleScope scope;
 		JpegDecodeCtx *ctx = reinterpret_cast<JpegDecodeCtx*>(work_req->data);
-
-		char * error = ctx->error;
-		NativeImage image = ctx->image;
-		Local<Function> cb = Local<Function>::New(ctx->cb);
+		makeCallback(ctx->cb, ctx->reader.error, ctx->dstimage);
 		delete ctx;
-
-		Local<Value> e, r;
-		if (error) {
-			e = Exception::Error(String::New(error));
-			r = *Undefined();
-		}
-		else {
-			e = *Undefined();
-			r = nativeImageToJsImage(image);
-		}
-
-		free(error);
-		image.free();
-
-		TryCatch try_catch;
-
-		Handle<Value> argv[2] = { e, r };
-		cb->Call(Context::GetCurrent()->Global(), 2, argv);
-
-		if (try_catch.HasCaught())
-			FatalException(try_catch);
-
-		return;
 	}
 
 	Handle<Value> decodeJpeg(const Arguments& args) {
@@ -146,10 +100,17 @@ namespace picha {
 		size_t srclen = Buffer::Length(srcbuf);
 
 		JpegDecodeCtx * ctx = new JpegDecodeCtx;
-		ctx->buffer = Persistent<Object>::New(srcbuf);
+		ctx->reader.open(srcdata, srclen);
+		if (ctx->reader.error) {
+			makeCallback(cb, ctx->reader.error, Undefined());
+			return Undefined();
+		}
+
+		Local<Object> jsdst = newJsImage(ctx->reader.width(), ctx->reader.height(), RGB_PIXEL);
+		ctx->dstimage = Persistent<Value>::New(jsdst);
+		ctx->buffer = Persistent<Value>::New(srcbuf);
 		ctx->cb = Persistent<Function>::New(cb);
-		ctx->srcdata = srcdata;
-		ctx->srclen = srclen;
+		ctx->dst = jsImageToNativeImage(jsdst);
 
 		uv_work_t* work_req = new uv_work_t();
 		work_req->data = ctx;
@@ -170,23 +131,23 @@ namespace picha {
 		char* srcdata = Buffer::Data(srcbuf);
 		size_t srclen = Buffer::Length(srcbuf);
 
-		JpegDecodeCtx ctx;
-		ctx.srcdata = srcdata;
-		ctx.srclen = srclen;
-
-		ctx.doWork();
-
-		Local<Value> r = *Undefined();
-		if (ctx.error) {
-			ThrowException(Exception::Error(String::New(ctx.error)));
-			free(ctx.error);
-		}
-		else {
-			r = nativeImageToJsImage(ctx.image);
+		JpegReader reader;
+		reader.open(srcdata, srclen);
+		if (reader.error) {
+			ThrowException(Exception::Error(String::New(reader.error)));
+			return Undefined();
 		}
 
-		ctx.image.free();
-		return scope.Close(r);
+		Local<Object> jsdst = newJsImage(reader.width(), reader.height(), RGB_PIXEL);
+
+		reader.decode(jsImageToNativeImage(jsdst));
+
+		if (reader.error) {
+			ThrowException(Exception::Error(String::New(reader.error)));
+			return Undefined();
+		}
+
+		return scope.Close(jsdst);
 	}
 
 	Handle<Value> statJpeg(const Arguments& args) {
@@ -198,26 +159,27 @@ namespace picha {
 		}
 		Local<Object> srcbuf = args[0]->ToObject();
 
-		PixelMode pixel;
-		int width, height;
-		Local<Value> r = *Undefined();
-		if (doJpegStat(Buffer::Data(srcbuf), Buffer::Length(srcbuf), width, height, pixel)) {
-			Local<Object> stat = Object::New();
-			stat->Set(width_symbol, Integer::New(width));
-			stat->Set(height_symbol, Integer::New(height));
-			stat->Set(pixel_symbol, pixelEnumToSymbol(pixel));
-			r = stat;
-		}
+		JpegReader reader;
+		reader.open(Buffer::Data(srcbuf), Buffer::Length(srcbuf));
+		if (reader.error)
+			return scope.Close(Undefined());
 
-		return scope.Close(r);
+		Local<Object> stat = Object::New();
+		stat->Set(width_symbol, Integer::New(reader.width()));
+		stat->Set(height_symbol, Integer::New(reader.height()));
+		stat->Set(pixel_symbol, pixelEnumToSymbol(RGB_PIXEL));
+		return scope.Close(stat);
 	}
 
 
 	//------------------------------------------------------------------------------------------------------------
 	//--
 
-	struct JpegEncodeCtx : JpegCtx {
-		JpegEncodeCtx() : dstdata(0) {}
+	struct JpegEncodeCtx {
+		JpegEncodeCtx() : error(0), dstdata(0) {}
+
+		char *error;
+		jmp_buf jmpbuf;
 
 		Persistent<Value> buffer;
 		Persistent<Function> cb;
@@ -229,14 +191,22 @@ namespace picha {
 		float quality;
 
 		void doWork();
+
+		static void onError(j_common_ptr cinfo) {
+			char errbuf[JMSG_LENGTH_MAX];
+			JpegEncodeCtx* self = (JpegEncodeCtx*)cinfo->client_data;
+			cinfo->err->format_message(cinfo, errbuf);
+			self->error = strdup(errbuf);
+			longjmp(self->jmpbuf, 1);
+		}
 	};
 
 	void JpegEncodeCtx::doWork() {
-
 		jpeg_compress_struct cinfo;
 		jpeg_error_mgr jerr;
 
-        cinfo.err = jpeg_std_error(&jerr);
+		cinfo.err = jpeg_std_error(&jerr);
+		cinfo.err->error_exit = &JpegEncodeCtx::onError;
         jpeg_create_compress(&cinfo);
 
 		unsigned long outsize = 0;

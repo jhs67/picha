@@ -41,6 +41,8 @@ namespace picha {
 	STATIC_SYMBOLS
 #	undef SSYMBOL
 
+	void makeCallback(Handle<Function> cb, const char * error, Handle<Value> v);
+
 
 	//--------------------------------------------------------------------------------------------------
 	//--

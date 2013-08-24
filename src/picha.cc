@@ -87,6 +87,22 @@ namespace picha {
 	}
 
 
+	void makeCallback(Handle<Function> cb, const char * error, Handle<Value> v) {
+		Local<Value> e;
+		Handle<Value> argv[2] = { Undefined(), v };
+		if (error) {
+			e = Exception::Error(String::New(error));
+			argv[0] = e;
+		}
+
+		TryCatch try_catch;
+
+		cb->Call(Context::GetCurrent()->Global(), 2, argv);
+
+		if (try_catch.HasCaught())
+			FatalException(try_catch);
+	}
+
 
 #	define SSYMBOL(a) Persistent<String> a ## _symbol;
 	STATIC_SYMBOLS

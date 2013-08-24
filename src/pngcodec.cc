@@ -241,22 +241,6 @@ namespace picha {
 		ctx->reader.close();
 	}
 
-	void makeCallback(Handle<Function> cb, const char * error, Handle<Value> v) {
-		Local<Value> e;
-		Handle<Value> argv[2] = { Undefined(), v };
-		if (error) {
-			e = Exception::Error(String::New(error));
-			argv[0] = e;
-		}
-
-		TryCatch try_catch;
-
-		cb->Call(Context::GetCurrent()->Global(), 2, argv);
-
-		if (try_catch.HasCaught())
-			FatalException(try_catch);
-	}
-
 	void V8_decodePNG(uv_work_t* work_req, int) {
 		HandleScope scope;
 		PngDecodeCtx *ctx = reinterpret_cast<PngDecodeCtx*>(work_req->data);
