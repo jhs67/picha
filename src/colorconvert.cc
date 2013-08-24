@@ -120,7 +120,10 @@ namespace picha {
 
 	template <PixelMode Src, PixelMode Dst> struct ColorConverter {
 		static void op(const ColorSettings &cs, NativeImage& src, NativeImage& dst) {
-			dst.alloc(src.width, src.height, Dst);
+			assert(dst.width == src.width);
+			assert(dst.height == src.height);
+			assert(src.pixel == Src);
+			assert(dst.pixel == Dst);
 			for (int i = 0; i < src.height; ++i) {
 				PixelType *s = src.row(i), *d = dst.row(i);
 				for (int j = 0; j < src.width; ++j, s += PixelWidth<Src>::value, d += PixelWidth<Dst>::value)
@@ -167,11 +170,12 @@ namespace picha {
 			default: break;
 		}
 
-		dst.clone(src);
+		dst.copy(src);
 		return;
 	}
 
 	struct ColorConvertContext {
+		Persistent<Value> dstimage;
 		Persistent<Value> buffer;
 		Persistent<Function> cb;
 		NativeImage src;
@@ -187,23 +191,8 @@ namespace picha {
 	void V8_colorConvert(uv_work_t* work_req, int) {
 		HandleScope scope;
 		ColorConvertContext *ctx = reinterpret_cast<ColorConvertContext*>(work_req->data);
-
-		NativeImage dst = ctx->dst;
-		Local<Function> cb = Local<Function>::New(ctx->cb);
+		makeCallback(ctx->cb, 0, ctx->dstimage);
 		delete ctx;
-
-		Local<Object> r = nativeImageToJsImage(dst);
-		dst.free();
-
-		TryCatch try_catch;
-
-		Handle<Value> argv[2] = { Undefined(), r };
-		cb->Call(Context::GetCurrent()->Global(), 2, argv);
-
-		if (try_catch.HasCaught())
-			FatalException(try_catch);
-
-		return;
 	}
 
 	Handle<Value> colorConvert(const Arguments& args) {
@@ -231,9 +220,11 @@ namespace picha {
 		}
 
 		ColorConvertContext *ctx = new ColorConvertContext;
-		ctx->buffer = Persistent<Value>::New(img->Get(data_symbol));
+		Local<Object> dstimage = newJsImage(src.width, src.height, toPixel);
+		ctx->dstimage = Persistent<Value>::New(dstimage);
+		ctx->buffer = Persistent<Value>::New(img);
 		ctx->cb = Persistent<Function>::New(cb);
-		ctx->dst.pixel = toPixel;
+		ctx->dst = jsImageToNativeImage(dstimage);
 		ctx->src = src;
 
 		getSettings(ctx->cs, opts);
@@ -271,15 +262,12 @@ namespace picha {
 		ColorSettings cs;
 		getSettings(cs, opts);
 
-		NativeImage dst;
-		dst.pixel = toPixel;
+		Local<Object> dstimage = newJsImage(src.width, src.height, toPixel);
+		NativeImage dst = jsImageToNativeImage(dstimage);
 
 		doColorConvert(cs, src, dst);
 
-		Local<Object> r = nativeImageToJsImage(dst);
-		dst.free();
-
-		return scope.Close(r);
+		return scope.Close(dstimage);
 	}
 
 }
