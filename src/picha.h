@@ -65,6 +65,16 @@ namespace picha {
 	template<> struct PixelWidth<GREYA_PIXEL> { static const int value = 2; };
 	template<> struct PixelWidth<GREY_PIXEL> { static const int value = 1; };
 
+	inline int pixelWidth(PixelMode p) {
+		switch (p) {
+			case RGB_PIXEL: return PixelWidth<RGB_PIXEL>::value;
+			case RGBA_PIXEL: return PixelWidth<RGBA_PIXEL>::value;
+			case GREY_PIXEL: return PixelWidth<GREY_PIXEL>::value;
+			case GREYA_PIXEL: return PixelWidth<GREYA_PIXEL>::value;
+			default: return 0;
+		}
+	}
+
 	typedef uint8_t PixelType;
 
 	struct NativeImage {
