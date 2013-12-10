@@ -4,6 +4,10 @@ var path = require('path');
 var assert = require('assert');
 var picha = require('../index.js');
 
+// This test relies on working png support
+if (!picha.catalog['image/png'])
+	return;
+
 describe('color_convert', function() {
 	var rgbImage, greyImage;
 	it("should load test images", function() {

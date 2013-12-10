@@ -4,6 +4,10 @@ var path = require('path');
 var assert = require('assert');
 var picha = require('../index.js');
 
+// Skip tests if no jpeg support
+if (!picha.catalog['image/jpeg'])
+	return;
+
 describe('jpeg_codec', function() {
 	var asyncJpeg, syncJpeg;
 	var asyncImage, syncImage;

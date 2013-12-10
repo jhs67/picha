@@ -4,6 +4,10 @@ var path = require('path');
 var assert = require('assert');
 var picha = require('../index.js');
 
+// This test relies on working jpeg support
+if (!picha.catalog['image/jpeg'])
+	return;
+
 describe('copy', function() {
 	var image;
 	it("should load test image", function() {

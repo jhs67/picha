@@ -4,6 +4,10 @@ var path = require('path');
 var assert = require('assert');
 var picha = require('../index.js');
 
+// This test relies on working png/jpeg support
+if (!picha.catalog['image/png'] || !picha.catalog['image/jpeg'])
+	return;
+
 describe('resize', function() {
 	var image, asyncSmall, smallImage;
 	var opts = { width: 32, height: 24 };
