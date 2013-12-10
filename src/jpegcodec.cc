@@ -89,12 +89,12 @@ namespace picha {
 	Handle<Value> decodeJpeg(const Arguments& args) {
 		HandleScope scope;
 
-		if (args.Length() != 2 || !Buffer::HasInstance(args[0]) || !args[1]->IsFunction()) {
-			ThrowException(Exception::Error(String::New("expected: decodeJpeg(srcbuffer, cb)")));
+		if (args.Length() != 3 || !Buffer::HasInstance(args[0]) || !args[2]->IsFunction()) {
+			ThrowException(Exception::Error(String::New("expected: decodeJpeg(srcbuffer, opts, cb)")));
 			return scope.Close(Undefined());
 		}
 		Local<Object> srcbuf = args[0]->ToObject();
-		Local<Function> cb = Local<Function>::Cast(args[1]);
+		Local<Function> cb = Local<Function>::Cast(args[2]);
 
 		char* srcdata = Buffer::Data(srcbuf);
 		size_t srclen = Buffer::Length(srcbuf);
@@ -122,8 +122,8 @@ namespace picha {
 	Handle<Value> decodeJpegSync(const Arguments& args) {
 		HandleScope scope;
 
-		if (args.Length() != 1 || !Buffer::HasInstance(args[0])) {
-			ThrowException(Exception::Error(String::New("expected: decodeJpegSync(srcbuffer)")));
+		if (args.Length() != 2 || !Buffer::HasInstance(args[0])) {
+			ThrowException(Exception::Error(String::New("expected: decodeJpegSync(srcbuffer, opts)")));
 			return scope.Close(Undefined());
 		}
 		Local<Object> srcbuf = args[0]->ToObject();

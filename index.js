@@ -39,24 +39,24 @@ var decodePngSync = exports.decodePngSync = function(buf, opt) {
 
 var encodePng = exports.encodePng = function(img, opt, cb) {
 	if (typeof opt === 'function') cb = opt, opt = {};
-	picha.encodePng(img, cb);
+	picha.encodePng(img, opt, cb);
 }
 
-var encodePngSync = exports.encodePngSync = function(img) {
-	return picha.encodePngSync(img);
+var encodePngSync = exports.encodePngSync = function(img, opt) {
+	return picha.encodePngSync(img, opt || {});
 }
 
 var statJpeg = exports.statJpeg = picha.statJpeg;
 
 var decodeJpeg = exports.decodeJpeg = function(buf, opt, cb) {
 	if (typeof opt === 'function') cb = opt, opt = {};
-	picha.decodeJpeg(buf, function(err, img) {
+	picha.decodeJpeg(buf, opt, function(err, img) {
 		cb(err, img && new Image(img));
 	})
 }
 
-var decodeJpegSync = exports.decodeJpegSync = function(buf) {
-	return new Image(picha.decodeJpegSync(buf));
+var decodeJpegSync = exports.decodeJpegSync = function(buf, opt) {
+	return new Image(picha.decodeJpegSync(buf, opt || {}));
 }
 
 var encodeJpeg = exports.encodeJpeg = function(img, opt, cb) {

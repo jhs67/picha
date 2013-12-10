@@ -482,12 +482,12 @@ namespace picha {
 	Handle<Value> encodePng(const Arguments& args) {
 		HandleScope scope;
 
-		if (args.Length() != 2 || !args[0]->IsObject() || !args[1]->IsFunction()) {
-			ThrowException(Exception::Error(String::New("expected: encodePng(image, cb)")));
+		if (args.Length() != 3 || !args[0]->IsObject() || !args[2]->IsFunction()) {
+			ThrowException(Exception::Error(String::New("expected: encodePng(image, opts, cb)")));
 			return scope.Close(Undefined());
 		}
 		Local<Object> img = args[0]->ToObject();
-		Local<Function> cb = Local<Function>::Cast(args[1]);
+		Local<Function> cb = Local<Function>::Cast(args[2]);
 
 		PngEncodeCtx * ctx = new PngEncodeCtx;
 		ctx->image = jsImageToNativeImage(img);
@@ -510,8 +510,8 @@ namespace picha {
 	Handle<Value> encodePngSync(const Arguments& args) {
 		HandleScope scope;
 
-		if (args.Length() != 1 || !args[0]->IsObject()) {
-			ThrowException(Exception::Error(String::New("expected: encodePngSync(image)")));
+		if (args.Length() != 2 || !args[0]->IsObject()) {
+			ThrowException(Exception::Error(String::New("expected: encodePngSync(image, opts)")));
 			return scope.Close(Undefined());
 		}
 		Local<Object> img = args[0]->ToObject();
