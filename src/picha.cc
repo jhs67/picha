@@ -3,10 +3,16 @@
 #include <node_buffer.h>
 
 #include "picha.h"
-#include "pngcodec.h"
-#include "jpegcodec.h"
-#include "colorconvert.h"
 #include "resize.h"
+#include "colorconvert.h"
+
+#ifdef WITH_PNG
+#include "pngcodec.h"
+#endif
+
+#ifdef WITH_JPEG
+#include "jpegcodec.h"
+#endif
 
 namespace picha {
 
@@ -104,33 +110,75 @@ namespace picha {
 			FatalException(try_catch);
 	}
 
+	v8::Local<v8::Function> SetPichaMethod(v8::Handle<v8::Object> o, const char * n, v8::InvocationCallback cb) {
+		v8::Local<v8::String> name = v8::String::NewSymbol(n);
+		v8::Local<v8::Function> fn = v8::FunctionTemplate::New(cb)->GetFunction();
+		fn->SetName(name);
+		o->Set(name, fn);
+		return fn;
+	}
 
 #	define SSYMBOL(a) Persistent<String> a ## _symbol;
 	STATIC_SYMBOLS
 #	undef SSYMBOL
+
 
 	void init(Handle<Object> target) {
 #		define SSYMBOL(a) a ## _symbol = NODE_PSYMBOL(# a);
 		STATIC_SYMBOLS
 #		undef SSYMBOL
 
-		NODE_SET_METHOD(target, "statPng", statPng);
-		NODE_SET_METHOD(target, "decodePng", decodePng);
-		NODE_SET_METHOD(target, "decodePngSync", decodePngSync);
-		NODE_SET_METHOD(target, "encodePng", encodePng);
-		NODE_SET_METHOD(target, "encodePngSync", encodePngSync);
+		v8::HandleScope handle_scope;
 
-		NODE_SET_METHOD(target, "statJpeg", statJpeg);
-		NODE_SET_METHOD(target, "decodeJpeg", decodeJpeg);
-		NODE_SET_METHOD(target, "decodeJpegSync", decodeJpegSync);
-		NODE_SET_METHOD(target, "encodeJpeg", encodeJpeg);
-		NODE_SET_METHOD(target, "encodeJpegSync", encodeJpegSync);
+		v8::Local<v8::Object> catalog = v8::Object::New();
+		v8::Local<v8::Function> fn;
+		v8::Local<v8::Object> obj;
+
+		target->Set(v8::String::NewSymbol("catalog"), catalog);
 
 		NODE_SET_METHOD(target, "colorConvert", colorConvert);
 		NODE_SET_METHOD(target, "colorConvertSync", colorConvertSync);
 
 		NODE_SET_METHOD(target, "resize", resize);
 		NODE_SET_METHOD(target, "resizeSync", resizeSync);
+
+#ifdef WITH_JPEG
+
+		obj = v8::Object::New();
+
+		fn = SetPichaMethod(target, "statJpeg", statJpeg);
+		obj->Set(stat_symbol, fn);
+		fn = SetPichaMethod(target, "decodeJpeg", decodeJpeg);
+		obj->Set(decode_symbol, fn);
+		fn = SetPichaMethod(target, "decodeJpegSync", decodeJpegSync);
+		obj->Set(decodeSync_symbol, fn);
+		fn = SetPichaMethod(target, "encodeJpeg", encodeJpeg);
+		obj->Set(encode_symbol, fn);
+		fn = SetPichaMethod(target, "encodeJpegSync", encodeJpegSync);
+		obj->Set(encodeSync_symbol, fn);
+
+		catalog->Set(v8::String::NewSymbol("image/jpeg"), obj);
+
+#endif
+
+#ifdef WITH_PNG
+
+		obj = v8::Object::New();
+
+		fn = SetPichaMethod(target, "statPng", statPng);
+		obj->Set(stat_symbol, fn);
+		fn = SetPichaMethod(target, "decodePng", decodePng);
+		obj->Set(decode_symbol, fn);
+		fn = SetPichaMethod(target, "decodePngSync", decodePngSync);
+		obj->Set(decodeSync_symbol, fn);
+		fn = SetPichaMethod(target, "encodePng", encodePng);
+		obj->Set(encode_symbol, fn);
+		fn = SetPichaMethod(target, "encodePngSync", encodePngSync);
+		obj->Set(encodeSync_symbol, fn);
+
+		catalog->Set(v8::String::NewSymbol("image/png"), obj);
+
+#endif
 	}
 
 }

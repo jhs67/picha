@@ -35,6 +35,11 @@ namespace picha {
 	SSYMBOL(mitchel)\
 	SSYMBOL(triangle)\
 	SSYMBOL(box)\
+	SSYMBOL(decodeSync)\
+	SSYMBOL(decode)\
+	SSYMBOL(encodeSync)\
+	SSYMBOL(encode)\
+	SSYMBOL(stat)\
 	/**/
 
 #	define SSYMBOL(a) extern Persistent<String> a ## _symbol;
