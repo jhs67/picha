@@ -4,80 +4,9 @@
 #include <node_buffer.h>
 
 #include "pngcodec.h"
+#include "writebuffer.h"
 
 namespace picha {
-
-
-	//----------------------------------------------------------------------------------------------------------------
-	//--
-
-	struct WriteBuffer {
-
-		WriteBuffer() : blocks(0), totallen(0), space(0) {}
-
-		~WriteBuffer() { delete blocks; }
-
-		struct WriteBlock {
-			int length;
-			char * data;
-			WriteBlock * next;
-			WriteBlock() : data(0), next(0) {}
-			~WriteBlock() { delete data; delete next; }
-		};
-
-		void write(char * data, size_t length) {
-			size_t l = length < space ? length : space;
-			if (l > 0) {
-				memcpy(blocks->data + blocks->length - space, data, l);
-				totallen += l;
-				length -= l;
-				space -= l;
-				data += l;
-			}
-
-			if (length > 0) {
-				const size_t min_block = 64 * 1024;
-				WriteBlock * n = new WriteBlock;
-				n->length = length > min_block ? length : min_block;
-				n->data = new char[n->length];
-				n->next = blocks;
-				blocks = n;
-
-				memcpy(blocks->data, data, length);
-				space = blocks->length - length;
-				totallen += length;
-			}
-		}
-
-		char * consolidate() {
-			char * r = 0;
-			if (blocks != 0) {
-				if (blocks->next == 0) {
-					r = blocks->data;
-					blocks->data = 0;
-				}
-				else {
-					r = new char[totallen];
-					for (WriteBlock * b = blocks; b != 0; b = b->next) {
-						size_t l = b->length - space;
-						memcpy(r + totallen - l, b->data, l);
-						totallen -= l;
-						space = 0;
-					}
-				}
-			}
-			delete blocks;
-			totallen = 0;
-			blocks = 0;
-			space = 0;
-			return r;
-		}
-
-		WriteBlock * blocks;
-		size_t totallen;
-		size_t space;
-	};
-
 
 	//----------------------------------------------------------------------------------------------------------------
 	//--
@@ -272,6 +201,7 @@ namespace picha {
 		PngDecodeCtx * ctx = new PngDecodeCtx;
 		ctx->reader.open(srcdata, srclen);
 		if (ctx->reader.error) {
+			delete ctx;
 			makeCallback(cb, ctx->reader.error, Undefined());
 			return Undefined();
 		}

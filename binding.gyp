@@ -8,8 +8,9 @@
 			'target_name': 'picha',
 			'sources': [
 				'src/picha.cc',
-				'src/colorconvert.cc',
 				'src/resize.cc',
+				'src/writebuffer.cc',
+				'src/colorconvert.cc',
 			],
 			'cflags': [
 				'-w',
