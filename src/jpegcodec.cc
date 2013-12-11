@@ -102,6 +102,7 @@ namespace picha {
 		JpegDecodeCtx * ctx = new JpegDecodeCtx;
 		ctx->reader.open(srcdata, srclen);
 		if (ctx->reader.error) {
+			delete ctx;
 			makeCallback(cb, ctx->reader.error, Undefined());
 			return Undefined();
 		}
