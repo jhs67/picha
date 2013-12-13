@@ -41,6 +41,10 @@ namespace picha {
 	SSYMBOL(encode)\
 	SSYMBOL(stat)\
 	SSYMBOL(index)\
+	SSYMBOL(compression)\
+	SSYMBOL(lzw)\
+	SSYMBOL(deflate)\
+	SSYMBOL(none)\
 	/**/
 
 #	define SSYMBOL(a) extern Persistent<String> a ## _symbol;

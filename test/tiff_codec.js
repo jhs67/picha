@@ -61,8 +61,20 @@ describe('tiff_codec', function() {
 			});
 		})
 		it("sync match original", function() {
-			image = picha.decodeTiffSync(syncTiff);
+			var image = picha.decodeTiffSync(syncTiff);
 			assert(image.equalPixels(syncImage));
+		})
+	})
+	describe("none compression round trips", function() {
+		it("sync match original", function() {
+			var image = picha.decodeTiffSync(picha.encodeTiffSync(syncImage, { compression: 'none' }));
+			assert(image.equalPixels(asyncImage));
+		})
+	})
+	describe("deflate compression round trips", function() {
+		it("sync match original", function() {
+			var image = picha.decodeTiffSync(picha.encodeTiffSync(syncImage, { compression: 'deflate' }));
+			assert(image.equalPixels(asyncImage));
 		})
 	})
 })

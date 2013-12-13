@@ -275,7 +275,7 @@ namespace picha {
 		TiffWriter() : tiff(0) {}
 		~TiffWriter() { if (tiff) TIFFClose(tiff); }
 
-		void write(NativeImage& image);
+		void write(NativeImage& image, int comp);
 
 		void errorOut(const char * e) { error = e; }
 		static tmsize_t readProc(thandle_t h, void* buf, tmsize_t size) { return 0; }
@@ -304,7 +304,7 @@ namespace picha {
 		return w->buffer.totallen;
 	}
 
-	void TiffWriter::write(NativeImage& image) {
+	void TiffWriter::write(NativeImage& image, int comp) {
 		tiff = TIFFClientOpen("memory", "wm", reinterpret_cast<thandle_t>(this),
 			&TiffWriter::readProc, &TiffWriter::writeProc, &TiffWriter::seekProc,
 			&TiffWriter::closeProc, &TiffWriter::sizeProc, &TiffWriter::mapProc, &TiffWriter::unmapProc);
@@ -318,7 +318,7 @@ namespace picha {
 		TIFFSetField(tiff, TIFFTAG_IMAGELENGTH, (uint32)image.height);
 		TIFFSetField(tiff, TIFFTAG_SAMPLESPERPIXEL, (uint16)sampleperpixel);
 		TIFFSetField(tiff, TIFFTAG_BITSPERSAMPLE, (uint16)8);
-		TIFFSetField(tiff,TIFFTAG_COMPRESSION,((uint16)COMPRESSION_NONE));
+		TIFFSetField(tiff,TIFFTAG_COMPRESSION,((uint16)comp));
 		TIFFSetField(tiff, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
 		TIFFSetField(tiff, TIFFTAG_PLANARCONFIG, (uint16)PLANARCONFIG_CONTIG);
 		TIFFSetField(tiff, TIFFTAG_PHOTOMETRIC, (uint16)(sampleperpixel < 3 ? PHOTOMETRIC_MINISBLACK : PHOTOMETRIC_RGB));
@@ -343,6 +343,7 @@ namespace picha {
 
 		TiffWriter writer;
 		NativeImage image;
+		int comp;
 
 		char *dstdata;
 		size_t dstlen;
@@ -350,7 +351,7 @@ namespace picha {
 
 	void UV_encodeTiff(uv_work_t* work_req) {
 		TiffEncodeCtx *ctx = reinterpret_cast<TiffEncodeCtx*>(work_req->data);
-		ctx->writer.write(ctx->image);
+		ctx->writer.write(ctx->image, ctx->comp);
 		ctx->dstlen = ctx->writer.buffer.totallen;
 		ctx->dstdata = ctx->writer.buffer.consolidate();
 	}
@@ -390,15 +391,42 @@ namespace picha {
 		return;
 	}
 
+	namespace {
+		const struct { Persistent<String>* symbol; int tag; } TiffCompressionModes[] = {
+			{ &none_symbol, COMPRESSION_NONE },
+			{ &lzw_symbol, COMPRESSION_LZW },
+			{ &deflate_symbol, COMPRESSION_ADOBE_DEFLATE },
+		};
+
+		const int TiffCompressionCount = sizeof(TiffCompressionModes) / sizeof(TiffCompressionModes[0]);
+
+		bool getTiffCompression(Handle<Value> jcomp, int& comp) {
+			for (int i = 0; i < TiffCompressionCount; ++i) {
+				if (jcomp->StrictEquals(*TiffCompressionModes[i].symbol)) {
+					comp = TiffCompressionModes[i].tag;
+					return true;
+				}
+			}
+			return false;
+		}
+	}
+
 	Handle<Value> encodeTiff(const Arguments& args) {
 		HandleScope scope;
 
-		if (args.Length() != 3 || !args[0]->IsObject() || !args[2]->IsFunction()) {
+		if (args.Length() != 3 || !args[0]->IsObject() || !args[1]->IsObject() || !args[2]->IsFunction()) {
 			ThrowException(Exception::Error(String::New("expected: encodeTiff(image, opts, cb)")));
 			return scope.Close(Undefined());
 		}
 		Local<Object> img = args[0]->ToObject();
+		Local<Object> opts = args[1]->ToObject();
 		Local<Function> cb = Local<Function>::Cast(args[2]);
+
+		int comp = COMPRESSION_LZW;
+		if (opts->Has(compression_symbol) && !getTiffCompression(opts->Get(compression_symbol), comp)) {
+			ThrowException(Exception::Error(String::New("invalid compression option")));
+			return scope.Close(Undefined());
+		}
 
 		TiffEncodeCtx * ctx = new TiffEncodeCtx;
 		ctx->image = jsImageToNativeImage(img);
@@ -410,6 +438,7 @@ namespace picha {
 
 		ctx->buffer = Persistent<Value>::New(img->Get(data_symbol));
 		ctx->cb = Persistent<Function>::New(cb);
+		ctx->comp = comp;
 
 		uv_work_t* work_req = new uv_work_t();
 		work_req->data = ctx;
@@ -421,11 +450,18 @@ namespace picha {
 	Handle<Value> encodeTiffSync(const Arguments& args) {
 		HandleScope scope;
 
-		if (args.Length() != 2 || !args[0]->IsObject()) {
-			ThrowException(Exception::Error(String::New("expected: encodeTiffSync(image)")));
+		if (args.Length() != 2 || !args[0]->IsObject() || !args[1]->IsObject()) {
+			ThrowException(Exception::Error(String::New("expected: encodeTiffSync(image, opts)")));
 			return scope.Close(Undefined());
 		}
 		Local<Object> img = args[0]->ToObject();
+		Local<Object> opts = args[1]->ToObject();
+
+		int comp = COMPRESSION_LZW;
+		if (opts->Has(compression_symbol) && !getTiffCompression(opts->Get(compression_symbol), comp)) {
+			ThrowException(Exception::Error(String::New("invalid compression option")));
+			return scope.Close(Undefined());
+		}
 
 		TiffWriter writer;
 		NativeImage image = jsImageToNativeImage(img);
@@ -434,7 +470,7 @@ namespace picha {
 			return scope.Close(Undefined());
 		}
 
-		writer.write(image);
+		writer.write(image, comp);
 
 		Local<Value> r = *Undefined();
 		if (!writer.error.empty()) {
