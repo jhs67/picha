@@ -53,6 +53,7 @@ namespace picha {
 	SSYMBOL(lossless)\
 	SSYMBOL(default)\
 	SSYMBOL(icon)\
+	SSYMBOL(alphaQuality)\
 	/**/
 
 #	define SSYMBOL(a) extern Persistent<String> a ## _symbol;

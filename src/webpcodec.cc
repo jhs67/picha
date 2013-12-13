@@ -137,10 +137,10 @@ namespace picha {
 
 	namespace {
 
-		double getQuality(Handle<Value> v) {
+		double getQuality(Handle<Value> v, double def) {
 			double quality = v->NumberValue();
 			if (quality != quality)
-				quality = 85;
+				quality = def;
 			else if (quality < 0)
 				quality = 0;
 			else if (quality > 100)
@@ -149,42 +149,42 @@ namespace picha {
 		}
 
 		bool setupWebPConfig(WebPConfig& config, Handle<Object> opts) {
-			float quality = getQuality(opts->Get(quality_symbol));
+			float quality = getQuality(opts->Get(quality_symbol), 85);
 
-
+			bool r = false;
 			if (opts->Has(preset_symbol)) {
 				Local<Value> v = opts->Get(preset_symbol);
 				if (v->StrictEquals(default_symbol)) {
-					return WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
+					r = WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
 				}
 				else if (v->StrictEquals(picture_symbol)) {
-					return WebPConfigPreset(&config, WEBP_PRESET_PICTURE, quality);
+					r = WebPConfigPreset(&config, WEBP_PRESET_PICTURE, quality);
 				}
 				else if (v->StrictEquals(photo_symbol)) {
-					return WebPConfigPreset(&config, WEBP_PRESET_PHOTO, quality);
+					r = WebPConfigPreset(&config, WEBP_PRESET_PHOTO, quality);
 				}
 				else if (v->StrictEquals(drawing_symbol)) {
-					return WebPConfigPreset(&config, WEBP_PRESET_DRAWING, quality);
+					r = WebPConfigPreset(&config, WEBP_PRESET_DRAWING, quality);
 				}
 				else if (v->StrictEquals(icon_symbol)) {
-					return WebPConfigPreset(&config, WEBP_PRESET_ICON, quality);
+					r = WebPConfigPreset(&config, WEBP_PRESET_ICON, quality);
 				}
 				else if (v->StrictEquals(text_symbol)) {
-					return WebPConfigPreset(&config, WEBP_PRESET_TEXT, quality);
+					r = WebPConfigPreset(&config, WEBP_PRESET_TEXT, quality);
 				}
 				else if (v->StrictEquals(lossless_symbol)) {
-					bool r = WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
+					r = WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
 					if (r) config.lossless = 1;
-					return r;
-				}
-				else {
-					return false;
 				}
 			}
 			else {
-				return WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
+				r = WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
 			}
 
+			if (r && opts->Has(alphaQuality_symbol))
+				config.alpha_quality = getQuality(opts->Get(alphaQuality_symbol), 100);
+
+			return r;
 		}
 
 		bool setupWebPPicture(WebPPicture& picture, NativeImage& image) {
