@@ -36,6 +36,8 @@ namespace picha {
 	}
 
 	void WriteBuffer::seek_(size_t length) {
+		if (cursor == length)
+			return;
 		cursor = 0;
 		cblock = hblock;
 		while (length > 0) {
@@ -57,6 +59,7 @@ namespace picha {
 			else {
 				size_t l = length < space ? length : space;
 				cursor += l;
+				length -= l;
 			}
 		}
 	}

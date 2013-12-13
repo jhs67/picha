@@ -1,7 +1,8 @@
 {
 	'variables': {
-		'with_png': '<!(pkg-config --exists libpng && echo yes || echo no)',
 		'with_jpeg': 'yes',
+		'with_png': '<!(pkg-config --exists libpng && echo yes || echo no)',
+		'with_tiff': '<!(pkg-config --exists libtiff-4 && echo yes || echo no)',
 	},
 	'targets': [
 		{
@@ -51,6 +52,27 @@
 					'libraries': [
 						'-ljpeg',
 					],
+				}],
+				['with_tiff == "yes"', {
+					'sources': [
+						'src/tiffcodec.cc',
+					],
+					'defines': [
+						'WITH_TIFF',
+					],
+					'cflags': [
+						'<!@(pkg-config libtiff-4 --cflags)',
+					],
+					'ldflags': [
+						'<!@(pkg-config libtiff-4 --libs-only-L --libs-only-other)',
+					],
+					'libraries': [
+						'<!@(pkg-config libtiff-4 --libs-only-l)',
+					],
+					'xcode_settings': {
+						'OTHER_CFLAGS': [ '<!@(pkg-config libtiff-4 --cflags)' ],
+						'OTHER_LDFLAGS': [ '<!@(pkg-config libtiff-4 --libs-only-L --libs-only-other)' ],
+					},
 				}],
 			],
 		},

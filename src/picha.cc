@@ -14,6 +14,10 @@
 #include "jpegcodec.h"
 #endif
 
+#ifdef WITH_TIFF
+#include "tiffcodec.h"
+#endif
+
 namespace picha {
 
 	void NativeImage::copy(NativeImage& o) {
@@ -177,6 +181,25 @@ namespace picha {
 		obj->Set(encodeSync_symbol, fn);
 
 		catalog->Set(v8::String::NewSymbol("image/png"), obj);
+
+#endif
+
+#ifdef WITH_TIFF
+
+		obj = v8::Object::New();
+
+		fn = SetPichaMethod(target, "statTiff", statTiff);
+		obj->Set(stat_symbol, fn);
+		fn = SetPichaMethod(target, "decodeTiff", decodeTiff);
+		obj->Set(decode_symbol, fn);
+		fn = SetPichaMethod(target, "decodeTiffSync", decodeTiffSync);
+		obj->Set(decodeSync_symbol, fn);
+		fn = SetPichaMethod(target, "encodeTiff", encodeTiff);
+		obj->Set(encode_symbol, fn);
+		fn = SetPichaMethod(target, "encodeTiffSync", encodeTiffSync);
+		obj->Set(encodeSync_symbol, fn);
+
+		catalog->Set(v8::String::NewSymbol("image/tiff"), obj);
 
 #endif
 	}

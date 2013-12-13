@@ -87,6 +87,33 @@ if (catalog['image/jpeg']) {
 
 //--
 
+if (catalog['image/tiff']) {
+
+	var statTiff = exports.statTiff = picha.statTiff;
+
+	var decodeTiff = exports.decodeTiff = function(buf, opt, cb) {
+		if (typeof opt === 'function') cb = opt, opt = {};
+		picha.decodeTiff(buf, opt, function(err, img) {
+			cb(err, img && new Image(img));
+		})
+	}
+
+	var decodeTiffSync = exports.decodeTiffSync = function(buf, opt) {
+		return new Image(picha.decodeTiffSync(buf, opt || {}));
+	}
+
+	var encodeTiff = exports.encodeTiff = function(img, opt, cb) {
+		if (typeof opt === 'function') cb = opt, opt = {};
+		picha.encodeTiff(img, opt, cb);
+	}
+
+	var encodeTiffSync = exports.encodeTiffSync = function(img, opt) {
+		return picha.encodeTiffSync(img, opt || {});
+	}
+}
+
+//--
+
 var stat = exports.stat = function(buf) {
 	for (var idx = 0; idx < mimetypes.length; ++idx) {
 		var stat = catalog[mimetypes[idx]].stat(buf);
