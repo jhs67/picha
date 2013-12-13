@@ -45,6 +45,14 @@ namespace picha {
 	SSYMBOL(lzw)\
 	SSYMBOL(deflate)\
 	SSYMBOL(none)\
+	SSYMBOL(preset)\
+	SSYMBOL(photo)\
+	SSYMBOL(picture)\
+	SSYMBOL(drawing)\
+	SSYMBOL(text)\
+	SSYMBOL(lossless)\
+	SSYMBOL(default)\
+	SSYMBOL(icon)\
 	/**/
 
 #	define SSYMBOL(a) extern Persistent<String> a ## _symbol;
@@ -113,6 +121,8 @@ namespace picha {
 
 	NativeImage jsImageToNativeImage(Local<Object>& jimg);
 	Local<Object> newJsImage(int w, int h, PixelMode pixel);
+	NativeImage newNativeImage(int w, int h, PixelMode pixel);
+	void freeNativeImage(NativeImage& image);
 	PixelMode pixelSymbolToEnum(Handle<Value> obj);
 	Handle<Value> pixelEnumToSymbol(PixelMode t);
 

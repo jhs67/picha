@@ -114,6 +114,33 @@ if (catalog['image/tiff']) {
 
 //--
 
+if (catalog['image/webp']) {
+
+	var statWebP = exports.statWebP = picha.statWebP;
+
+	var decodeWebP = exports.decodeWebP = function(buf, opt, cb) {
+		if (typeof opt === 'function') cb = opt, opt = {};
+		picha.decodeWebP(buf, opt, function(err, img) {
+			cb(err, img && new Image(img));
+		})
+	}
+
+	var decodeWebPSync = exports.decodeWebPSync = function(buf, opt) {
+		return new Image(picha.decodeWebPSync(buf, opt || {}));
+	}
+
+	var encodeWebP = exports.encodeWebP = function(img, opt, cb) {
+		if (typeof opt === 'function') cb = opt, opt = {};
+		picha.encodeWebP(img, opt, cb);
+	}
+
+	var encodeWebPSync = exports.encodeWebPSync = function(img, opt) {
+		return picha.encodeWebPSync(img, opt || {});
+	}
+}
+
+//--
+
 var stat = exports.stat = function(buf) {
 	for (var idx = 0; idx < mimetypes.length; ++idx) {
 		var stat = catalog[mimetypes[idx]].stat(buf);

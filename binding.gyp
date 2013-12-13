@@ -3,6 +3,7 @@
 		'with_jpeg': 'yes',
 		'with_png': '<!(pkg-config --exists libpng && echo yes || echo no)',
 		'with_tiff': '<!(pkg-config --exists libtiff-4 && echo yes || echo no)',
+		'with_webp': '<!(pkg-config --exists libwebp && echo yes || echo no)',
 	},
 	'targets': [
 		{
@@ -72,6 +73,27 @@
 					'xcode_settings': {
 						'OTHER_CFLAGS': [ '<!@(pkg-config libtiff-4 --cflags)' ],
 						'OTHER_LDFLAGS': [ '<!@(pkg-config libtiff-4 --libs-only-L --libs-only-other)' ],
+					},
+				}],
+				['with_webp == "yes"', {
+					'sources': [
+						'src/webpcodec.cc',
+					],
+					'defines': [
+						'WITH_WEBP',
+					],
+					'cflags': [
+						'<!@(pkg-config libwebp --cflags)',
+					],
+					'ldflags': [
+						'<!@(pkg-config libwebp --libs-only-L --libs-only-other)',
+					],
+					'libraries': [
+						'<!@(pkg-config libwebp --libs-only-l)',
+					],
+					'xcode_settings': {
+						'OTHER_CFLAGS': [ '<!@(pkg-config libwebp --cflags)' ],
+						'OTHER_LDFLAGS': [ '<!@(pkg-config libwebp --libs-only-L --libs-only-other)' ],
 					},
 				}],
 			],

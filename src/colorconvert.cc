@@ -3,11 +3,6 @@
 
 namespace picha {
 
-	struct ColorSettings {
-		ColorSettings() : rFactor(0.299f), gFactor(0.587f), bFactor(0.114) {}
-		float rFactor, gFactor, bFactor;
-	};
-
 	void getSettings(ColorSettings& s, Handle<Object> opts) {
 		double d;
 		Local<Value> v;

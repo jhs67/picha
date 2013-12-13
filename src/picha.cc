@@ -18,6 +18,10 @@
 #include "tiffcodec.h"
 #endif
 
+#ifdef WITH_WEBP
+#include "webpcodec.h"
+#endif
+
 namespace picha {
 
 	void NativeImage::copy(NativeImage& o) {
@@ -200,6 +204,25 @@ namespace picha {
 		obj->Set(encodeSync_symbol, fn);
 
 		catalog->Set(v8::String::NewSymbol("image/tiff"), obj);
+
+#endif
+
+#ifdef WITH_WEBP
+
+		obj = v8::Object::New();
+
+		fn = SetPichaMethod(target, "statWebP", statWebP);
+		obj->Set(stat_symbol, fn);
+		fn = SetPichaMethod(target, "decodeWebP", decodeWebP);
+		obj->Set(decode_symbol, fn);
+		fn = SetPichaMethod(target, "decodeWebPSync", decodeWebPSync);
+		obj->Set(decodeSync_symbol, fn);
+		fn = SetPichaMethod(target, "encodeWebP", encodeWebP);
+		obj->Set(encode_symbol, fn);
+		fn = SetPichaMethod(target, "encodeWebPSync", encodeWebPSync);
+		obj->Set(encodeSync_symbol, fn);
+
+		catalog->Set(v8::String::NewSymbol("image/webp"), obj);
 
 #endif
 	}
