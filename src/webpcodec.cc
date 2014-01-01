@@ -40,6 +40,10 @@ namespace picha {
 		HandleScope scope;
 		WebPDecodeCtx *ctx = reinterpret_cast<WebPDecodeCtx*>(work_req->data);
 		makeCallback(ctx->cb, ctx->error ? "decode error" : 0, ctx->dstimage);
+		ctx->dstimage.Dispose();
+		ctx->buffer.Dispose();
+		ctx->cb.Dispose();
+		delete work_req;
 		delete ctx;
 	}
 
@@ -274,6 +278,9 @@ namespace picha {
 		size_t dstlen = ctx->dstlen;
 		char * dstdata = ctx->dstdata;
 		Local<Function> cb = Local<Function>::New(ctx->cb);
+		ctx->buffer.Dispose();
+		ctx->cb.Dispose();
+		delete work_req;
 		delete ctx;
 
 		Local<Value> e, r;

@@ -301,6 +301,10 @@ namespace picha {
 
 		Local<Value> dst = Local<Value>::New(ctx->dstimage);
 		Local<Function> cb = Local<Function>::New(ctx->cb);
+		ctx->srcbuffer.Dispose();
+		ctx->dstimage.Dispose();
+		ctx->cb.Dispose();
+		delete work_req;
 		delete ctx;
 
 		TryCatch try_catch;

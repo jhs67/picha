@@ -187,6 +187,10 @@ namespace picha {
 		HandleScope scope;
 		ColorConvertContext *ctx = reinterpret_cast<ColorConvertContext*>(work_req->data);
 		makeCallback(ctx->cb, 0, ctx->dstimage);
+		ctx->dstimage.Dispose();
+		ctx->buffer.Dispose();
+		ctx->cb.Dispose();
+		delete work_req;
 		delete ctx;
 	}
 

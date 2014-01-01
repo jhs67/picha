@@ -174,6 +174,10 @@ namespace picha {
 		HandleScope scope;
 		PngDecodeCtx *ctx = reinterpret_cast<PngDecodeCtx*>(work_req->data);
 		makeCallback(ctx->cb, ctx->reader.error, ctx->dstimage);
+		ctx->dstimage.Dispose();
+		ctx->buffer.Dispose();
+		ctx->cb.Dispose();
+		delete work_req;
 		delete ctx;
 	}
 
@@ -382,6 +386,9 @@ namespace picha {
 		size_t dstlen = ctx->dstlen;
 		char * dstdata = ctx->dstdata;
 		Local<Function> cb = Local<Function>::New(ctx->cb);
+		ctx->buffer.Dispose();
+		ctx->cb.Dispose();
+		delete work_req;
 		delete ctx;
 
 		Local<Value> e, r;
