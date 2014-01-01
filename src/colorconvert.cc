@@ -220,6 +220,7 @@ namespace picha {
 		ctx->buffer = Persistent<Value>::New(img);
 		ctx->cb = Persistent<Function>::New(cb);
 		ctx->dst = jsImageToNativeImage(dstimage);
+		assert(ctx->dst.data != 0);
 		ctx->src = src;
 
 		getSettings(ctx->cs, opts);

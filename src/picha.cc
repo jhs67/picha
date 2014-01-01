@@ -96,7 +96,9 @@ namespace picha {
 
 		size_t datalen = h * stride;
 		Buffer *pixelbuf = Buffer::New(datalen);
-		image->Set(data_symbol, pixelbuf->handle_);
+		assert(pixelbuf != 0);
+		Local<Value> jspixel = Local<Value>::New(pixelbuf->handle_);
+		image->Set(data_symbol, jspixel);
 
 		return image;
 	}
