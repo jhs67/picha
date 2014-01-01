@@ -2,6 +2,7 @@
 var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
+var buffertools = require('buffertools');
 var picha = require('../index.js');
 
 // Skip tests if no png support
@@ -50,7 +51,7 @@ describe('png_codec', function() {
 			syncPng = picha.encodePngSync(syncImage);
 		})
 		it("should be the same sync or async", function() {
-			assert(asyncPng.compare(syncPng) == 0);
+			assert(buffertools.compare(asyncPng, syncPng) == 0);
 		})
 	})
 	describe("round trip", function() {

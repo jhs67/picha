@@ -2,6 +2,7 @@
 var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
+var buffertools = require('buffertools');
 var picha = require('../index.js');
 
 // Skip tests if no tiff support
@@ -51,7 +52,7 @@ describe('tiff_codec', function() {
 		})
 		// It seems lib tiff will write some uninitialized memory into the output file!
 		// it("should be the same sync or async", function() {
-		// 	assert(asyncTiff.compare(syncTiff) == 0);
+		// 	assert(buffertools.compare(asyncTiff, syncTiff) == 0);
 		// })
 	})
 	describe("round trip", function() {
