@@ -7,6 +7,26 @@ I couldn't find a library or libraries to encode and decode jpeg and png images 
 allow raw access to the pixel data - so I wrote one. There is also optional support
 for tiff and webp images. Color conversion, cropping, and resizing are also supported.
 
+## Install
+The image format support requires the supporting libraries (libjpeg, libpng, etc.) to be installed on your system. There is a hard dependency on libjpeg. The other formats will be enabled if the requisite library is available at install time (as determined by pkg-config).
+
+On Ubuntu and other debian variants this should install the required packages:
+```
+sudo apt-get install libjpeg-dev libpng-dev libwebp-dev libtiff-dev
+```
+On Red Had and CentOS this is likely to get what you need:
+```
+yum install libjpeg-devel libpng-devel libtiff-devel
+```
+On MacOS using [MacPorts](http://www.macports.org/):
+```
+sudo port install jpeg libpng tiff webp
+```
+Once the dependencies are installed use [npm](http://npmjs.org):
+```
+npm install picha
+```
+
 ## Usage
 ```
 var fs = require('fs');
