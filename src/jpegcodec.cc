@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <jpeglib.h>
+#include <jerror.h>
 #include <node.h>
 #include <node_buffer.h>
 
@@ -11,11 +12,32 @@
 
 namespace picha {
 
+	namespace {
+		void initSource (j_decompress_ptr cinfo) {}
+
+		boolean fillInputBuffer(j_decompress_ptr cinfo) {
+			ERREXIT(cinfo, JERR_INPUT_EMPTY);
+			return TRUE;
+		}
+
+		void skipInputData(j_decompress_ptr cinfo, long num_bytes) {
+			struct jpeg_source_mgr* src = (struct jpeg_source_mgr*) cinfo->src;
+			if (num_bytes > 0) {
+				src->next_input_byte += (size_t)num_bytes;
+				src->bytes_in_buffer -= (size_t)num_bytes;
+			}
+		}
+
+		void termSource (j_decompress_ptr cinfo) {
+		}
+	}
+
 	struct JpegReader {
 		bool isopen;
 		char * error;
 		jmp_buf jmpbuf;
 		jpeg_error_mgr jerr;
+		jpeg_source_mgr jsrc;
 		jpeg_decompress_struct cinfo;
 
 		JpegReader() : isopen(false), error(0) {}
@@ -32,7 +54,16 @@ namespace picha {
 			cinfo.client_data = this;
 
 			jpeg_create_decompress(&cinfo);
-			jpeg_mem_src(&cinfo, reinterpret_cast<unsigned char*>(buf), len);
+			assert(cinfo.src == 0);
+			cinfo.src = &jsrc;
+			jsrc.init_source = initSource;
+			jsrc.fill_input_buffer = fillInputBuffer;
+			jsrc.skip_input_data = skipInputData;
+			jsrc.resync_to_restart = jpeg_resync_to_restart;
+			jsrc.term_source = termSource;
+			jsrc.bytes_in_buffer = len;
+			jsrc.next_input_byte = (JOCTET*)buf;
+
 			isopen = true;
 
 			if (setjmp(jmpbuf))
@@ -206,17 +237,57 @@ namespace picha {
 		}
 	};
 
+	namespace {
+
+		struct JpegDst : public jpeg_destination_mgr {
+			JpegDst() : size(0), buf(0) {
+				init_destination = initDest_;
+				empty_output_buffer = emptyOutput_;
+				term_destination = termDest_;
+			}
+
+			static void initDest_(j_compress_ptr cinfo) { static_cast<JpegDst*>(cinfo->dest)->initDest(); }
+			void initDest() {
+				size = 4 * 4096;
+				buf = new unsigned char[size];
+				next_output_byte = buf;
+				free_in_buffer = size;
+			}
+
+			static boolean emptyOutput_(j_compress_ptr cinfo) { return static_cast<JpegDst*>(cinfo->dest)->emptyOutput(cinfo); }
+			boolean emptyOutput(j_compress_ptr cinfo) {
+				unsigned long nextsize = size * 2;
+				unsigned char * nextbuffer = new unsigned char[nextsize];
+				if (nextbuffer == NULL) ERREXIT(cinfo, JERR_OUT_OF_MEMORY);
+				memcpy(nextbuffer, buf, size);
+				delete[] buf;
+				buf = nextbuffer;
+				next_output_byte = buf + size;
+				free_in_buffer = nextsize - size;
+				size = nextsize;
+				return TRUE;
+			}
+
+			static void termDest_(j_compress_ptr cinfo) { static_cast<JpegDst*>(cinfo->dest)->termDest(); }
+			void termDest() {
+				size -= free_in_buffer;
+			}
+
+			unsigned long size;
+			unsigned char *buf;
+		};
+	}
+
 	void JpegEncodeCtx::doWork() {
 		jpeg_compress_struct cinfo;
 		jpeg_error_mgr jerr;
+		JpegDst jdst;
 
 		cinfo.err = jpeg_std_error(&jerr);
 		cinfo.err->error_exit = &JpegEncodeCtx::onError;
         jpeg_create_compress(&cinfo);
 
-		unsigned long outsize = 0;
-		unsigned char *outbuffer = 0;
-        jpeg_mem_dest(&cinfo, &outbuffer, &outsize);
+		cinfo.dest = &jdst;
 
         cinfo.input_components = 3;
         cinfo.in_color_space = JCS_RGB;
@@ -236,8 +307,8 @@ namespace picha {
         jpeg_finish_compress(&cinfo);
 		jpeg_destroy_compress(&cinfo);
 
-		dstdata = reinterpret_cast<PixelType*>(outbuffer);
-		dstlen = outsize;
+		dstdata = reinterpret_cast<PixelType*>(jdst.buf);
+		dstlen = jdst.size;
 	}
 
 	void UV_encodeJpeg(uv_work_t* work_req) {
@@ -270,7 +341,7 @@ namespace picha {
 		}
 
 		free(error);
-		delete[] dstdata;
+		delete[] reinterpret_cast<unsigned char*>(dstdata);
 
 		TryCatch try_catch;
 
@@ -361,7 +432,7 @@ namespace picha {
 			r = Local<Value>::New(buf->handle_);
 		}
 
-		delete ctx.dstdata;
+		delete reinterpret_cast<unsigned char*>(ctx.dstdata);
 		return scope.Close(r);
 	}
 
