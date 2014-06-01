@@ -75,6 +75,9 @@ namespace picha {
 		void decode(const NativeImage &dst) {
 			assert(dst.pixel == RGB_PIXEL);
 
+			if (setjmp(jmpbuf))
+				return;
+
 			jpeg_start_decompress(&cinfo);
 			for(int y = 0; y < dst.height; ++y) {
 				JSAMPLE* p = (JSAMPLE*)(dst.row(y));
