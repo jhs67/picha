@@ -32,6 +32,14 @@ namespace picha {
 		}
 	}
 
+	void cmyk_to_rgb(unsigned char *cmyk, unsigned char *rgb, int width) {
+		for (int i = 0; i < width; ++i, cmyk += 4, rgb += 3) {
+			rgb[0] = int(cmyk[0]) * cmyk[3] / 255;
+			rgb[1] = int(cmyk[1]) * cmyk[3] / 255;
+			rgb[2] = int(cmyk[2]) * cmyk[3] / 255;
+		}
+	}
+
 	struct JpegReader {
 		bool isopen;
 		char * error;
@@ -73,17 +81,40 @@ namespace picha {
 		}
 
 		void decode(const NativeImage &dst) {
-			assert(dst.pixel == RGB_PIXEL);
-
 			if (setjmp(jmpbuf))
 				return;
 
 			jpeg_start_decompress(&cinfo);
-			for(int y = 0; y < dst.height; ++y) {
-				JSAMPLE* p = (JSAMPLE*)(dst.row(y));
-				jpeg_read_scanlines(&cinfo, &p, 1);
+
+			if (cinfo.out_color_space == JCS_CMYK) {
+				unsigned char *buf = new unsigned char[dst.width * 4];
+				for(int y = 0; y < dst.height; ++y) {
+					JSAMPLE* p = (JSAMPLE*)(&buf[0]);
+					int r = jpeg_read_scanlines(&cinfo, &p, 1);
+					assert(r == 1);
+					cmyk_to_rgb(&buf[0], dst.row(y), dst.width);
+				}
+				delete[] buf;
 			}
+			else {
+				for(int y = 0; y < dst.height; ++y) {
+					JSAMPLE* p = (JSAMPLE*)(dst.row(y));
+					int r = jpeg_read_scanlines(&cinfo, &p, 1);
+					assert(r == 1);
+				}
+			}
+
 			jpeg_finish_decompress(&cinfo);
+		}
+
+		PixelMode getPixel() {
+			if (cinfo.out_color_space == JCS_RGB)
+				return RGB_PIXEL;
+			if (cinfo.out_color_space == JCS_GRAYSCALE)
+				return GREY_PIXEL;
+			if (cinfo.out_color_space == JCS_CMYK)
+				return RGB_PIXEL;
+			return INVALID_PIXEL;
 		}
 
 		int width() { return cinfo.image_width; }
@@ -145,7 +176,14 @@ namespace picha {
 			return Undefined();
 		}
 
-		Local<Object> jsdst = newJsImage(ctx->reader.width(), ctx->reader.height(), RGB_PIXEL);
+		PixelMode pixel = ctx->reader.getPixel();
+		if (pixel == INVALID_PIXEL) {
+			makeCallback(cb, "Unsupported jpeg image color space", Undefined());
+			delete ctx;
+			return Undefined();
+		}
+
+		Local<Object> jsdst = newJsImage(ctx->reader.width(), ctx->reader.height(), pixel);
 		ctx->dstimage = Persistent<Value>::New(jsdst);
 		ctx->buffer = Persistent<Value>::New(srcbuf);
 		ctx->cb = Persistent<Function>::New(cb);
@@ -177,7 +215,13 @@ namespace picha {
 			return Undefined();
 		}
 
-		Local<Object> jsdst = newJsImage(reader.width(), reader.height(), RGB_PIXEL);
+		PixelMode pixel = reader.getPixel();
+		if (pixel == INVALID_PIXEL) {
+			ThrowException(Exception::Error(String::New("Unsupported jpeg image color space")));
+			return Undefined();
+		}
+
+		Local<Object> jsdst = newJsImage(reader.width(), reader.height(), pixel);
 
 		reader.decode(jsImageToNativeImage(jsdst));
 
@@ -203,10 +247,14 @@ namespace picha {
 		if (reader.error)
 			return scope.Close(Undefined());
 
+		PixelMode pixel = reader.getPixel();
+		if (pixel == INVALID_PIXEL)
+			return scope.Close(Undefined());
+
 		Local<Object> stat = Object::New();
 		stat->Set(width_symbol, Integer::New(reader.width()));
 		stat->Set(height_symbol, Integer::New(reader.height()));
-		stat->Set(pixel_symbol, pixelEnumToSymbol(RGB_PIXEL));
+		stat->Set(pixel_symbol, pixelEnumToSymbol(pixel));
 		return scope.Close(stat);
 	}
 
