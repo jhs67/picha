@@ -340,19 +340,46 @@ namespace picha {
 
 		cinfo.dest = &jdst;
 
-        cinfo.input_components = 3;
-        cinfo.in_color_space = JCS_RGB;
+		if (image.pixel == GREY_PIXEL || image.pixel == GREYA_PIXEL) {
+	        cinfo.input_components = 1;
+	        cinfo.in_color_space = JCS_GRAYSCALE;
+		}
+		else {
+	        cinfo.input_components = 3;
+	        cinfo.in_color_space = JCS_RGB;
+		}
         cinfo.image_width = (JDIMENSION)image.width;
         cinfo.image_height = (JDIMENSION)image.height;
 
         jpeg_set_defaults(&cinfo);
         jpeg_set_quality(&cinfo, quality, true);
         jpeg_start_compress(&cinfo, true);
-        fflush(stdout);
 
-		for (int y = 0; y < image.height; ++y) {
-			PixelType * p = image.row(y);
-			jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(&p), 1);
+		if (image.pixel == RGBA_PIXEL) {
+			unsigned char * buf = new unsigned char[image.width * 3];
+			for (int y = 0; y < image.height; ++y) {
+				PixelType * p = image.row(y), *q = buf;
+				for (int x = 0; x < image.width; x += 1, p += 4, q += 3)
+					q[0] = p[0], q[1] = p[1], q[2] = p[2];
+				jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(buf), 1);
+			}
+			delete[] buf;
+		}
+		else if (image.pixel == GREYA_PIXEL) {
+			unsigned char * buf = new unsigned char[image.width];
+			for (int y = 0; y < image.height; ++y) {
+				PixelType * p = image.row(y), *q = buf;
+				for (int x = 0; x < image.width; x += 1, p += 2, q += 1)
+					q[0] = p[0];
+				jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(buf), 1);
+			}
+			delete[] buf;
+		}
+		else {
+			for (int y = 0; y < image.height; ++y) {
+				PixelType * p = image.row(y);
+				jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(&p), 1);
+			}
 		}
 
         jpeg_finish_compress(&cinfo);
