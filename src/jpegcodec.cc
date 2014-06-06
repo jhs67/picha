@@ -361,7 +361,7 @@ namespace picha {
 				PixelType * p = image.row(y), *q = buf;
 				for (int x = 0; x < image.width; x += 1, p += 4, q += 3)
 					q[0] = p[0], q[1] = p[1], q[2] = p[2];
-				jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(buf), 1);
+				jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(&buf), 1);
 			}
 			delete[] buf;
 		}
@@ -371,7 +371,7 @@ namespace picha {
 				PixelType * p = image.row(y), *q = buf;
 				for (int x = 0; x < image.width; x += 1, p += 2, q += 1)
 					q[0] = p[0];
-				jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(buf), 1);
+				jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(&buf), 1);
 			}
 			delete[] buf;
 		}

@@ -72,4 +72,18 @@ describe('jpeg_codec', function() {
 	testFile("test.jpeg", 50, 50, 'rgb');
 	testFile("test2g.jpg", 76, 50, 'grey');
 	testFile("test2cmyk.jpg", 76, 50, 'rgb');
+
+	describe("encodes images with alpha", function() {
+		var img;
+		it("should load test.png", function() {
+			img = picha.decodeSync(fs.readFileSync(path.join(__dirname, "test.png")));
+			assert(img.pixel === "rgba");
+		})
+		it("should jpeg encode rgba", function() {
+			var jpeg = picha.encodeJpegSync(img, { quality: 100 });
+		})
+		it("should jpeg encode greya", function() {
+			var jpeg = picha.encodeJpegSync(picha.colorConvertSync(img, { pixel: 'greya' }), { quality: 100 });
+		})
+	})
 })
