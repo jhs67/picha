@@ -4,7 +4,6 @@
 var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
-var buffertools = require('buffertools');
 var picha = require('../index.js');
 
 // Skip tests if no webp support
@@ -53,7 +52,7 @@ describe('webp_codec', function() {
 			syncWebP = picha.encodeWebPSync(syncImage, { preset: 'lossless' });
 		});
 		it("should be the same sync or async", function() {
-			assert(buffertools.compare(asyncWebP, syncWebP) === 0);
+			assert(picha.Image.bufferCompare(asyncWebP, syncWebP) === 0);
 		});
 		it("async should match original", function(done) {
 			picha.decodeWebP(asyncWebP, function(err, image) {
@@ -77,7 +76,7 @@ describe('webp_codec', function() {
 			syncWebP = picha.encodeWebPSync(syncImage, { quality: 70 });
 		});
 		it("should be the same sync or async", function() {
-			assert(buffertools.compare(asyncWebP, syncWebP) === 0);
+			assert(picha.Image.bufferCompare(asyncWebP, syncWebP) === 0);
 		});
 		it("async should nearly match original", function(done) {
 			picha.decodeWebP(asyncWebP, function(err, image) {

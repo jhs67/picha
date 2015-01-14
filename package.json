@@ -20,7 +20,6 @@
     "crop"
   ],
   "dependencies": {
-    "buffertools": "~2.0.0"
   },
   "devDependencies": {
     "mocha": ">=1.9"

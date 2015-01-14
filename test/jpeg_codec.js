@@ -4,7 +4,6 @@
 var fs = require('fs');
 var path = require('path');
 var assert = require('assert');
-var buffertools = require('buffertools');
 var picha = require('../index.js');
 
 // Skip tests if no jpeg support
@@ -54,7 +53,7 @@ describe('jpeg_codec', function() {
 				syncJpeg = picha.encodeJpegSync(syncImage, { quality: 100 });
 			});
 			it("should be the same sync or async", function() {
-				assert(buffertools.compare(asyncJpeg, syncJpeg) === 0);
+				assert(picha.Image.bufferCompare(asyncJpeg, syncJpeg) === 0);
 			});
 		});
 		describe("round trip " + name, function() {
