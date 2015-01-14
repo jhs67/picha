@@ -1,3 +1,5 @@
+/*global describe, before, after, it */
+"use strict";
 
 var fs = require('fs');
 var path = require('path');
@@ -17,5 +19,5 @@ describe('copy', function() {
 		var c = new picha.Image({ width: 30, height: 30, pixel: image.pixel });
 		image.copy(c);
 		assert(image.subView(0, 0, 30, 30).equalPixels(c));
-	})
-})
+	});
+});

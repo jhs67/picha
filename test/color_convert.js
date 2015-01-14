@@ -1,3 +1,5 @@
+/*global describe, before, after, it */
+"use strict";
 
 var fs = require('fs');
 var path = require('path');
@@ -29,7 +31,7 @@ describe('color_convert', function() {
 				if (err) return done(err);
 				assert(greyImage.equalPixels(rimg));
 				done();
-			})
-		})
-	})
-})
+			});
+		});
+	});
+});

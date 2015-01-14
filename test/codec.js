@@ -1,3 +1,5 @@
+/*global describe, before, after, it */
+"use strict";
 
 var fs = require('fs');
 var path = require('path');
@@ -62,5 +64,5 @@ describe('codec', function() {
 				assert(image.equalPixels(pngImage));
 			});
 		}
-	})
-})
+	});
+});

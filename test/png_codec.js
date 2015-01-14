@@ -1,3 +1,5 @@
+/*global describe, before, after, it */
+"use strict";
 
 var fs = require('fs');
 var path = require('path');
@@ -38,32 +40,32 @@ describe('png_codec', function() {
 		});
 		it("should be the same sync or async", function() {
 			assert(syncImage.equalPixels(asyncImage));
-		})
-	})
+		});
+	});
 	describe("encode", function() {
 		it("should async encode", function(done) {
 			picha.encodePng(asyncImage, function(err, blob) {
 				asyncPng = blob;
 				done(err);
-			})
+			});
 		});
 		it("should sync encode", function() {
 			syncPng = picha.encodePngSync(syncImage);
-		})
+		});
 		it("should be the same sync or async", function() {
-			assert(buffertools.compare(asyncPng, syncPng) == 0);
-		})
-	})
+			assert(buffertools.compare(asyncPng, syncPng) === 0);
+		});
+	});
 	describe("round trip", function() {
 		it("async match original", function(done) {
 			picha.decodePng(asyncPng, function(err, image) {
 				assert(image.equalPixels(asyncImage));
 				done(err);
 			});
-		})
+		});
 		it("sync match original", function() {
-			image = picha.decodePngSync(syncPng);
+			var image = picha.decodePngSync(syncPng);
 			assert(image.equalPixels(syncImage));
-		})
-	})
-})
+		});
+	});
+});

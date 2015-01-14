@@ -1,3 +1,5 @@
+/*global describe, before, after, it */
+"use strict";
 
 var fs = require('fs');
 var path = require('path');
@@ -21,10 +23,10 @@ describe('resize', function() {
 			assert(asyncSmall.avgChannelDiff(smallImage) < 2);
 			done(err);
 		});
-	})
+	});
 	it("should sync resize", function() {
 		var syncSmall = picha.resizeSync(image, opts);
 		assert(syncSmall.avgChannelDiff(smallImage) < 2);
 		assert(syncSmall.equalPixels(asyncSmall));
-	})
-})
+	});
+});

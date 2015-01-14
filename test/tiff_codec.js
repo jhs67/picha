@@ -1,3 +1,5 @@
+/*global describe, before, after, it */
+"use strict";
 
 var fs = require('fs');
 var path = require('path');
@@ -38,45 +40,45 @@ describe('tiff_codec', function() {
 		});
 		it("should be the same sync or async", function() {
 			assert(syncImage.equalPixels(asyncImage));
-		})
-	})
+		});
+	});
 	describe("encode", function() {
 		it("should async encode", function(done) {
 			picha.encodeTiff(asyncImage, function(err, blob) {
 				asyncTiff = blob;
 				done(err);
-			})
+			});
 		});
 		it("should sync encode", function() {
 			syncTiff = picha.encodeTiffSync(syncImage);
-		})
+		});
 		// It seems lib tiff will write some uninitialized memory into the output file!
 		// it("should be the same sync or async", function() {
 		// 	assert(buffertools.compare(asyncTiff, syncTiff) == 0);
 		// })
-	})
+	});
 	describe("round trip", function() {
 		it("async match original", function(done) {
 			picha.decodeTiff(asyncTiff, function(err, image) {
 				assert(image.equalPixels(asyncImage));
 				done(err);
 			});
-		})
+		});
 		it("sync match original", function() {
 			var image = picha.decodeTiffSync(syncTiff);
 			assert(image.equalPixels(syncImage));
-		})
-	})
+		});
+	});
 	describe("none compression round trips", function() {
 		it("sync match original", function() {
 			var image = picha.decodeTiffSync(picha.encodeTiffSync(syncImage, { compression: 'none' }));
 			assert(image.equalPixels(asyncImage));
-		})
-	})
+		});
+	});
 	describe("deflate compression round trips", function() {
 		it("sync match original", function() {
 			var image = picha.decodeTiffSync(picha.encodeTiffSync(syncImage, { compression: 'deflate' }));
 			assert(image.equalPixels(asyncImage));
-		})
-	})
-})
+		});
+	});
+});
