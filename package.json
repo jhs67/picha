@@ -20,6 +20,7 @@
     "crop"
   ],
   "dependencies": {
+    "nan": "^1.5.1"
   },
   "devDependencies": {
     "mocha": ">=1.9"

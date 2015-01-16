@@ -17,6 +17,9 @@
 			'cflags': [
 				'-w',
 			],
+			'include_dirs' : [
+				"<!(node -e \"require('nan')\")"
+			],
 			'xcode_settings': {
 				'OTHER_CFLAGS': [ '-I/opt/local/include' ],
 				'OTHER_LDFLAGS': [ '-L/opt/local/lib' ],

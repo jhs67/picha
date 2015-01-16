@@ -16,8 +16,8 @@ namespace picha {
 	//---------------------------------------------------------------------------------------------------------
 
 	struct WebPDecodeCtx {
-		Persistent<Value> dstimage;
-		Persistent<Value> buffer;
+		Persistent<Object> dstimage;
+		Persistent<Object> buffer;
 		Persistent<Function> cb;
 		const uint8_t * srcdata;
 		uint srclen;
@@ -37,22 +37,22 @@ namespace picha {
 	}
 
 	void V8_decodeWebP(uv_work_t* work_req, int) {
-		HandleScope scope;
+		NanScope();
 		WebPDecodeCtx *ctx = reinterpret_cast<WebPDecodeCtx*>(work_req->data);
-		makeCallback(ctx->cb, ctx->error ? "decode error" : 0, ctx->dstimage);
-		ctx->dstimage.Dispose();
-		ctx->buffer.Dispose();
-		ctx->cb.Dispose();
+		makeCallback(NanNew(ctx->cb), ctx->error ? "decode error" : 0, NanNew(ctx->dstimage));
+		NanDisposePersistent(ctx->dstimage);
+		NanDisposePersistent(ctx->buffer);
+		NanDisposePersistent(ctx->cb);
 		delete work_req;
 		delete ctx;
 	}
 
-	Handle<Value> decodeWebP(const Arguments& args) {
-		HandleScope scope;
+	NAN_METHOD(decodeWebP) {
+		NanScope();
 
 		if (args.Length() != 3 || !Buffer::HasInstance(args[0]) || !args[1]->IsObject() || !args[2]->IsFunction()) {
-			ThrowException(Exception::Error(String::New("expected: decodeWebP(srcbuffer, opts, cb)")));
-			return scope.Close(Undefined());
+			NanThrowError("expected: decodeWebP(srcbuffer, opts, cb)");
+			NanReturnUndefined();
 		}
 		Local<Object> srcbuf = args[0]->ToObject();
 		Local<Function> cb = Local<Function>::Cast(args[2]);
@@ -62,15 +62,15 @@ namespace picha {
 
 		WebPBitstreamFeatures feat;
 		if (WebPGetFeatures((const uint8_t*)Buffer::Data(srcbuf), Buffer::Length(srcbuf), &feat)) {
-			makeCallback(cb, "invalid image features", Undefined());
-			return scope.Close(Undefined());
+			makeCallback(cb, "invalid image features", NanUndefined());
+			NanReturnUndefined();
 		}
 
 		WebPDecodeCtx * ctx = new WebPDecodeCtx;
 		Local<Object> jsdst = newJsImage(feat.width, feat.height, feat.has_alpha ? RGBA_PIXEL : RGB_PIXEL);
-		ctx->dstimage = Persistent<Value>::New(jsdst);
-		ctx->buffer = Persistent<Value>::New(srcbuf);
-		ctx->cb = Persistent<Function>::New(cb);
+		NanAssignPersistent(ctx->dstimage, jsdst);
+		NanAssignPersistent(ctx->buffer, srcbuf);
+		NanAssignPersistent(ctx->cb, cb);
 		ctx->dst = jsImageToNativeImage(jsdst);
 		ctx->srcdata = (const uint8_t*)srcdata;
 		ctx->srclen = srclen;
@@ -79,15 +79,15 @@ namespace picha {
 		work_req->data = ctx;
 		uv_queue_work(uv_default_loop(), work_req, UV_decodeWebP, V8_decodeWebP);
 
-		return Undefined();
+		NanReturnUndefined();
 	}
 
-	Handle<Value> decodeWebPSync(const Arguments& args) {
-		HandleScope scope;
+	NAN_METHOD(decodeWebPSync) {
+		NanScope();
 
 		if (args.Length() != 2 || !Buffer::HasInstance(args[0]) || !args[1]->IsObject()) {
-			ThrowException(Exception::Error(String::New("expected: decodeWebPSync(srcbuffer, opts)")));
-			return scope.Close(Undefined());
+			NanThrowError("expected: decodeWebPSync(srcbuffer, opts)");
+			NanReturnUndefined();
 		}
 		Local<Object> srcbuf = args[0]->ToObject();
 
@@ -96,8 +96,8 @@ namespace picha {
 
 		WebPBitstreamFeatures feat;
 		if (WebPGetFeatures((const uint8_t*)Buffer::Data(srcbuf), Buffer::Length(srcbuf), &feat)) {
-			ThrowException(Exception::Error(String::New("invalid image features")));
-			return scope.Close(Undefined());
+			NanThrowError("invalid image features");
+			NanReturnUndefined();
 		}
 
 		Local<Object> jsdst = newJsImage(feat.width, feat.height, feat.has_alpha ? RGBA_PIXEL : RGB_PIXEL);
@@ -110,31 +110,31 @@ namespace picha {
 			out = WebPDecodeRGBInto((const uint8_t*)srcdata, srclen, dst.data, dst.stride * dst.height, dst.stride);
 
 		if (out == 0) {
-			ThrowException(Exception::Error(String::New("error decoding image")));
-			return Undefined();
+			NanThrowError("error decoding image");
+			NanReturnUndefined();
 		}
 
-		return scope.Close(jsdst);
+		NanReturnValue(jsdst);
 	}
 
-	Handle<Value> statWebP(const Arguments& args) {
-		HandleScope scope;
+	NAN_METHOD(statWebP) {
+		NanScope();
 
 		if (args.Length() != 1 || !Buffer::HasInstance(args[0])) {
-			ThrowException(Exception::Error(String::New("expected: statWebP(srcbuffer)")));
-			return scope.Close(Undefined());
+			NanThrowError("expected: statWebP(srcbuffer)");
+			NanReturnUndefined();
 		}
 		Local<Object> srcbuf = args[0]->ToObject();
 
 		WebPBitstreamFeatures feat;
 		if (WebPGetFeatures((const uint8_t*)Buffer::Data(srcbuf), Buffer::Length(srcbuf), &feat))
-			return scope.Close(Undefined());
+			NanReturnUndefined();
 
-		Local<Object> stat = Object::New();
-		stat->Set(width_symbol, Integer::New(feat.width));
-		stat->Set(height_symbol, Integer::New(feat.height));
-		stat->Set(pixel_symbol, pixelEnumToSymbol(feat.has_alpha ? RGBA_PIXEL : RGB_PIXEL));
-		return scope.Close(stat);
+		Local<Object> stat = NanNew<Object>();
+		stat->Set(NanNew(width_symbol), NanNew<Integer>(feat.width));
+		stat->Set(NanNew(height_symbol), NanNew<Integer>(feat.height));
+		stat->Set(NanNew(pixel_symbol), pixelEnumToSymbol(feat.has_alpha ? RGBA_PIXEL : RGB_PIXEL));
+		NanReturnValue(stat);
 	}
 
 	//---------------------------------------------------------------------------------------------------------
@@ -153,30 +153,30 @@ namespace picha {
 		}
 
 		bool setupWebPConfig(WebPConfig& config, Handle<Object> opts) {
-			float quality = getQuality(opts->Get(quality_symbol), 85);
+			float quality = getQuality(opts->Get(NanNew(quality_symbol)), 85);
 
 			bool r = false;
-			if (opts->Has(preset_symbol)) {
-				Local<Value> v = opts->Get(preset_symbol);
-				if (v->StrictEquals(default_symbol)) {
+			if (opts->Has(NanNew(preset_symbol))) {
+				Local<Value> v = opts->Get(NanNew(preset_symbol));
+				if (v->StrictEquals(NanNew(default_symbol))) {
 					r = WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
 				}
-				else if (v->StrictEquals(picture_symbol)) {
+				else if (v->StrictEquals(NanNew(picture_symbol))) {
 					r = WebPConfigPreset(&config, WEBP_PRESET_PICTURE, quality);
 				}
-				else if (v->StrictEquals(photo_symbol)) {
+				else if (v->StrictEquals(NanNew(photo_symbol))) {
 					r = WebPConfigPreset(&config, WEBP_PRESET_PHOTO, quality);
 				}
-				else if (v->StrictEquals(drawing_symbol)) {
+				else if (v->StrictEquals(NanNew(drawing_symbol))) {
 					r = WebPConfigPreset(&config, WEBP_PRESET_DRAWING, quality);
 				}
-				else if (v->StrictEquals(icon_symbol)) {
+				else if (v->StrictEquals(NanNew(icon_symbol))) {
 					r = WebPConfigPreset(&config, WEBP_PRESET_ICON, quality);
 				}
-				else if (v->StrictEquals(text_symbol)) {
+				else if (v->StrictEquals(NanNew(text_symbol))) {
 					r = WebPConfigPreset(&config, WEBP_PRESET_TEXT, quality);
 				}
-				else if (v->StrictEquals(lossless_symbol)) {
+				else if (v->StrictEquals(NanNew(lossless_symbol))) {
 					r = WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
 					if (r) config.lossless = 1;
 				}
@@ -185,8 +185,8 @@ namespace picha {
 				r = WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
 			}
 
-			if (r && opts->Has(alphaQuality_symbol))
-				config.alpha_quality = getQuality(opts->Get(alphaQuality_symbol), 100);
+			if (r && opts->Has(NanNew(alphaQuality_symbol)))
+				config.alpha_quality = getQuality(opts->Get(NanNew(alphaQuality_symbol)), 100);
 
 			return r;
 		}
@@ -271,34 +271,33 @@ namespace picha {
 	}
 
 	void V8_encodeWebP(uv_work_t* work_req, int) {
-		HandleScope scope;
+		NanScope();
 		WebPEncodeCtx *ctx = reinterpret_cast<WebPEncodeCtx*>(work_req->data);
 
 		bool error = ctx->error;
 		size_t dstlen = ctx->dstlen;
 		char * dstdata = ctx->dstdata;
-		Local<Function> cb = Local<Function>::New(ctx->cb);
-		ctx->buffer.Dispose();
-		ctx->cb.Dispose();
+		Local<Function> cb = NanNew(ctx->cb);
+		NanDisposePersistent(ctx->buffer);
+		NanDisposePersistent(ctx->cb);
 		delete work_req;
 		delete ctx;
 
 		Local<Value> e, r;
 		if (error) {
-			e = Exception::Error(String::New("webp encode error"));
-			r = *Undefined();
+			e = Exception::Error(NanNew<String>("webp encode error"));
+			r = NanUndefined();
 		}
 		else {
-			e = *Undefined();
-			Buffer *buf = Buffer::New(dstdata, dstlen);
-			r = Local<Value>::New(buf->handle_);
+			e = NanUndefined();
+			r = NanNewBufferHandle(dstdata, dstlen);
 			free(dstdata);
 		}
 
 		TryCatch try_catch;
 
 		Handle<Value> argv[2] = { e, r };
-		cb->Call(Context::GetCurrent()->Global(), 2, argv);
+		NanMakeCallback(NanGetCurrentContext()->Global(), cb, 2, argv);
 
 		if (try_catch.HasCaught())
 			FatalException(try_catch);
@@ -306,12 +305,12 @@ namespace picha {
 		return;
 	}
 
-	Handle<Value> encodeWebP(const Arguments& args) {
-		HandleScope scope;
+	NAN_METHOD(encodeWebP) {
+		NanScope();
 
 		if (args.Length() != 3 || !args[0]->IsObject() || !args[1]->IsObject() || !args[2]->IsFunction()) {
-			ThrowException(Exception::Error(String::New("expected: encodeWebP(image, opts, cb)")));
-			return scope.Close(Undefined());
+			NanThrowError("expected: encodeWebP(image, opts, cb)");
+			NanReturnUndefined();
 		}
 		Local<Object> img = args[0]->ToObject();
 		Local<Object> opts = args[1]->ToObject();
@@ -320,52 +319,52 @@ namespace picha {
 		WebPEncodeCtx *ctx = new WebPEncodeCtx();
 		if (!setupWebPConfig(ctx->config, opts)) {
 			delete ctx;
-			makeCallback(cb, "invalid webp preset", Undefined());
-			return scope.Close(Undefined());
+			makeCallback(cb, "invalid webp preset", NanUndefined());
+			NanReturnUndefined();
 		}
 
-		ctx->buffer = Persistent<Value>::New(img->Get(data_symbol));
-		ctx->cb = Persistent<Function>::New(cb);
+		NanAssignPersistent(ctx->buffer, img->Get(NanNew(data_symbol)));
+		NanAssignPersistent(ctx->cb, cb);
 		ctx->image = jsImageToNativeImage(img);
 		if (!ctx->image.data) {
 			delete ctx;
-			makeCallback(cb, "invalid image", Undefined());
-			return scope.Close(Undefined());
+			makeCallback(cb, "invalid image", NanUndefined());
+			NanReturnUndefined();
 		}
 
 		uv_work_t* work_req = new uv_work_t();
 		work_req->data = ctx;
 		uv_queue_work(uv_default_loop(), work_req, UV_encodeWebP, V8_encodeWebP);
 
-		return scope.Close(Undefined());
+		NanReturnUndefined();
 	}
 
-	Handle<Value> encodeWebPSync(const Arguments& args) {
-		HandleScope scope;
+	NAN_METHOD(encodeWebPSync) {
+		NanScope();
 
 		if (args.Length() != 2 || !args[0]->IsObject() || !args[1]->IsObject()) {
-			ThrowException(Exception::Error(String::New("expected: encodeWebPSync(image, opts)")));
-			return scope.Close(Undefined());
+			NanThrowError("expected: encodeWebPSync(image, opts)");
+			NanReturnUndefined();
 		}
 		Local<Object> img = args[0]->ToObject();
 		Local<Object> opts = args[1]->ToObject();
 
 		WebPConfig config;
 		if (!setupWebPConfig(config, opts)) {
-			ThrowException(Exception::Error(String::New("invalid webp preset")));
-			return scope.Close(Undefined());
+			NanThrowError("invalid webp preset");
+			NanReturnUndefined();
 		}
 
 		NativeImage image = jsImageToNativeImage(img);
 		if (!image.data) {
-			ThrowException(Exception::Error(String::New("invalid image")));
-			return scope.Close(Undefined());
+			NanThrowError("invalid image");
+			NanReturnUndefined();
 		}
 
 		WebPPicture picture;
 		if (!setupWebPPicture(picture, image)) {
-			ThrowException(Exception::Error(String::New("error setting up webp picture")));
-			return scope.Close(Undefined());
+			NanThrowError("error setting up webp picture");
+			NanReturnUndefined();
 		}
 
 		WebPMemoryWriter writer;
@@ -378,13 +377,13 @@ namespace picha {
 
 		if (!ok) {
 			if (writer.mem) free(writer.mem);
-			ThrowException(Exception::Error(String::New("webp encode error")));
-			return scope.Close(Undefined());
+			NanThrowError("webp encode error");
+			NanReturnUndefined();
 		}
 
-		Buffer *buf = Buffer::New((const char*)writer.mem, writer.size);
+		Local<Value> r = NanNewBufferHandle((const char*)writer.mem, writer.size);
 		free(writer.mem);
-		return scope.Close(buf->handle_);
+		NanReturnValue(r);
 	}
 
 }

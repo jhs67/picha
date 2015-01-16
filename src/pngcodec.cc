@@ -156,8 +156,8 @@ namespace picha {
 	}
 
 	struct PngDecodeCtx {
-		Persistent<Value> dstimage;
-		Persistent<Value> buffer;
+		Persistent<Object> dstimage;
+		Persistent<Object> buffer;
 		Persistent<Function> cb;
 		PngReader reader;
 
@@ -171,32 +171,32 @@ namespace picha {
 	}
 
 	void V8_decodePNG(uv_work_t* work_req, int) {
-		HandleScope scope;
+		NanScope();
 		PngDecodeCtx *ctx = reinterpret_cast<PngDecodeCtx*>(work_req->data);
-		makeCallback(ctx->cb, ctx->reader.error, ctx->dstimage);
-		ctx->dstimage.Dispose();
-		ctx->buffer.Dispose();
-		ctx->cb.Dispose();
+		makeCallback(NanNew(ctx->cb), ctx->reader.error, NanNew(ctx->dstimage));
+		NanDisposePersistent(ctx->dstimage);
+		NanDisposePersistent(ctx->buffer);
+		NanDisposePersistent(ctx->cb);
 		delete work_req;
 		delete ctx;
 	}
 
-	Handle<Value> decodePng(const Arguments& args) {
-		HandleScope scope;
+	NAN_METHOD(decodePng) {
+		NanScope();
 
 		if (args.Length() != 3 || !Buffer::HasInstance(args[0]) || !args[1]->IsObject() || !args[2]->IsFunction()) {
-			ThrowException(Exception::Error(String::New("expected: decodePng(srcbuffer, opts, cb)")));
-			return scope.Close(Undefined());
+			NanThrowError("expected: decodePng(srcbuffer, opts, cb)");
+			NanReturnUndefined();
 		}
 		Local<Object> srcbuf = args[0]->ToObject();
 		Local<Object> opts = args[1]->ToObject();
 		Local<Function> cb = Local<Function>::Cast(args[2]);
 
-		Local<Value> jpixel = opts->Get(pixel_symbol);
+		Local<Value> jpixel = opts->Get(NanNew(pixel_symbol));
 		PixelMode pixel = pixelSymbolToEnum(jpixel);
 		if (!jpixel->IsUndefined() && pixel == INVALID_PIXEL) {
-			ThrowException(Exception::Error(String::New("invalid pixel mode")));
-			return scope.Close(Undefined());
+			NanThrowError("invalid pixel mode");
+			NanReturnUndefined();
 		}
 
 		char* srcdata = Buffer::Data(srcbuf);
@@ -206,41 +206,41 @@ namespace picha {
 		ctx->reader.open(srcdata, srclen);
 		if (ctx->reader.error) {
 			delete ctx;
-			makeCallback(cb, ctx->reader.error, Undefined());
-			return Undefined();
+			makeCallback(cb, ctx->reader.error, NanUndefined());
+			NanReturnUndefined();
 		}
 
 		if (pixel == INVALID_PIXEL)
 			pixel = ctx->reader.pixel();
 
 		Local<Object> jsdst = newJsImage(ctx->reader.width(), ctx->reader.height(), pixel);
-		ctx->dstimage = Persistent<Value>::New(jsdst);
-		ctx->buffer = Persistent<Value>::New(srcbuf);
-		ctx->cb = Persistent<Function>::New(cb);
+		NanAssignPersistent(ctx->dstimage, jsdst);
+		NanAssignPersistent(ctx->buffer, srcbuf);
+		NanAssignPersistent(ctx->cb, cb);
 		ctx->dst = jsImageToNativeImage(jsdst);
 
 		uv_work_t* work_req = new uv_work_t();
 		work_req->data = ctx;
 		uv_queue_work(uv_default_loop(), work_req, UV_decodePNG, V8_decodePNG);
 
-		return Undefined();
+		NanReturnUndefined();
 	}
 
-	Handle<Value> decodePngSync(const Arguments& args) {
-		HandleScope scope;
+	NAN_METHOD(decodePngSync) {
+		NanScope();
 
 		if (args.Length() != 2 || !Buffer::HasInstance(args[0]) || !args[1]->IsObject()) {
-			ThrowException(Exception::Error(String::New("expected: decodePngSync(srcbuffer, opts)")));
-			return scope.Close(Undefined());
+			NanThrowError("expected: decodePngSync(srcbuffer, opts)");
+			NanReturnUndefined();
 		}
 		Local<Object> srcbuf = args[0]->ToObject();
 		Local<Object> opts = args[1]->ToObject();
 
-		Local<Value> jpixel = opts->Get(pixel_symbol);
+		Local<Value> jpixel = opts->Get(NanNew(pixel_symbol));
 		PixelMode pixel = pixelSymbolToEnum(jpixel);
 		if (!jpixel->IsUndefined() && pixel == INVALID_PIXEL) {
-			ThrowException(Exception::Error(String::New("invalid pixel mode")));
-			return scope.Close(Undefined());
+			NanThrowError("invalid pixel mode");
+			NanReturnUndefined();
 		}
 
 		char* srcdata = Buffer::Data(srcbuf);
@@ -249,8 +249,8 @@ namespace picha {
 		PngReader reader;
 		reader.open(srcdata, srclen);
 		if (reader.error) {
-			ThrowException(Exception::Error(String::New(reader.error)));
-			return Undefined();
+			NanThrowError(reader.error);
+			NanReturnUndefined();
 		}
 
 		if (pixel == INVALID_PIXEL)
@@ -261,32 +261,32 @@ namespace picha {
 		reader.decode(jsImageToNativeImage(jsdst));
 
 		if (reader.error) {
-			ThrowException(Exception::Error(String::New(reader.error)));
-			return Undefined();
+			NanThrowError(reader.error);
+			NanReturnUndefined();
 		}
 
-		return scope.Close(jsdst);
+		NanReturnValue(jsdst);
 	}
 
-	Handle<Value> statPng(const Arguments& args) {
-		HandleScope scope;
+	NAN_METHOD(statPng) {
+		NanScope();
 
 		if (args.Length() != 1 || !Buffer::HasInstance(args[0])) {
-			ThrowException(Exception::Error(String::New("expected: statPng(buffer)")));
-			return scope.Close(Undefined());
+			NanThrowError("expected: statPng(buffer)");
+			NanReturnUndefined();
 		}
 		Local<Object> srcbuf = args[0]->ToObject();
 
 		PngReader reader;
 		reader.open(Buffer::Data(srcbuf), Buffer::Length(srcbuf));
 		if (reader.error)
-			return scope.Close(Undefined());
+			NanReturnUndefined();
 
-		Local<Object> stat = Object::New();
-		stat->Set(width_symbol, Integer::New(reader.width()));
-		stat->Set(height_symbol, Integer::New(reader.height()));
-		stat->Set(pixel_symbol, pixelEnumToSymbol(reader.pixel()));
-		return scope.Close(stat);
+		Local<Object> stat = NanNew<Object>();
+		stat->Set(NanNew(width_symbol), NanNew<Integer>(reader.width()));
+		stat->Set(NanNew(height_symbol), NanNew<Integer>(reader.height()));
+		stat->Set(NanNew(pixel_symbol), pixelEnumToSymbol(reader.pixel()));
+		NanReturnValue(stat);
 	}
 
 
@@ -379,27 +379,26 @@ namespace picha {
 	}
 
 	void V8_encodePNG(uv_work_t* work_req, int) {
-		HandleScope scope;
+		NanScope();
 		PngEncodeCtx *ctx = reinterpret_cast<PngEncodeCtx*>(work_req->data);
 
 		char * error = ctx->error;
 		size_t dstlen = ctx->dstlen;
 		char * dstdata = ctx->dstdata;
-		Local<Function> cb = Local<Function>::New(ctx->cb);
-		ctx->buffer.Dispose();
-		ctx->cb.Dispose();
+		Local<Function> cb = NanNew(ctx->cb);
+		NanDisposePersistent(ctx->buffer);
+		NanDisposePersistent(ctx->cb);
 		delete work_req;
 		delete ctx;
 
 		Local<Value> e, r;
 		if (error) {
-			e = Exception::Error(String::New(error));
-			r = *Undefined();
+			e = Exception::Error(NanNew<String>(error));
+			r = NanUndefined();
 		}
 		else {
-			e = *Undefined();
-			Buffer *buf = Buffer::New(dstdata, dstlen);
-			r = Local<Value>::New(buf->handle_);
+			e = NanUndefined();
+			r = NanNewBufferHandle(dstdata, dstlen);
 		}
 
 		free(error);
@@ -408,7 +407,7 @@ namespace picha {
 		TryCatch try_catch;
 
 		Handle<Value> argv[2] = { e, r };
-		cb->Call(Context::GetCurrent()->Global(), 2, argv);
+		NanMakeCallback(NanGetCurrentContext()->Global(), cb, 2, argv);
 
 		if (try_catch.HasCaught())
 			FatalException(try_catch);
@@ -416,12 +415,12 @@ namespace picha {
 		return;
 	}
 
-	Handle<Value> encodePng(const Arguments& args) {
-		HandleScope scope;
+	NAN_METHOD(encodePng) {
+		NanScope();
 
 		if (args.Length() != 3 || !args[0]->IsObject() || !args[2]->IsFunction()) {
-			ThrowException(Exception::Error(String::New("expected: encodePng(image, opts, cb)")));
-			return scope.Close(Undefined());
+			NanThrowError("expected: encodePng(image, opts, cb)");
+			NanReturnUndefined();
 		}
 		Local<Object> img = args[0]->ToObject();
 		Local<Function> cb = Local<Function>::Cast(args[2]);
@@ -430,50 +429,49 @@ namespace picha {
 		ctx->image = jsImageToNativeImage(img);
 		if (!ctx->image.data) {
 			delete ctx;
-			ThrowException(Exception::Error(String::New("invalid image")));
-			return scope.Close(Undefined());
+			NanThrowError("invalid image");
+			NanReturnUndefined();
 		}
 
-		ctx->buffer = Persistent<Value>::New(img->Get(data_symbol));
-		ctx->cb = Persistent<Function>::New(cb);
+		NanAssignPersistent(ctx->buffer, img->Get(NanNew(data_symbol)));
+		NanAssignPersistent(ctx->cb, cb);
 
 		uv_work_t* work_req = new uv_work_t();
 		work_req->data = ctx;
 		uv_queue_work(uv_default_loop(), work_req, UV_encodePNG, V8_encodePNG);
 
-		return scope.Close(Undefined());
+		NanReturnUndefined();
 	}
 
-	Handle<Value> encodePngSync(const Arguments& args) {
-		HandleScope scope;
+	NAN_METHOD(encodePngSync) {
+		NanScope();
 
 		if (args.Length() != 2 || !args[0]->IsObject()) {
-			ThrowException(Exception::Error(String::New("expected: encodePngSync(image, opts)")));
-			return scope.Close(Undefined());
+			NanThrowError("expected: encodePngSync(image, opts)");
+			NanReturnUndefined();
 		}
 		Local<Object> img = args[0]->ToObject();
 
 		PngEncodeCtx ctx;
 		ctx.image = jsImageToNativeImage(img);
 		if (!ctx.image.data) {
-			ThrowException(Exception::Error(String::New("invalid image")));
-			return scope.Close(Undefined());
+			NanThrowError("invalid image");
+			NanReturnUndefined();
 		}
 
 		ctx.doWork();
 
-		Local<Value> r = *Undefined();
+		Local<Value> r = NanUndefined();
 		if (ctx.error) {
-			ThrowException(Exception::Error(String::New(ctx.error)));
+			NanThrowError(ctx.error);
 			free(ctx.error);
 		}
 		else {
-			Buffer *buf = Buffer::New(ctx.dstdata, ctx.dstlen);
-			r = Local<Value>::New(buf->handle_);
+			r = NanNewBufferHandle(ctx.dstdata, ctx.dstlen);
 		}
 
 		delete ctx.dstdata;
-		return scope.Close(r);
+		NanReturnValue(r);
 	}
 
 }

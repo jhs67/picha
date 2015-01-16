@@ -5,11 +5,11 @@
 
 namespace picha {
 
-	Handle<Value> statJpeg(const Arguments& args);
-	Handle<Value> decodeJpeg(const Arguments& args);
-	Handle<Value> decodeJpegSync(const Arguments& args);
-	Handle<Value> encodeJpeg(const Arguments& args);
-	Handle<Value> encodeJpegSync(const Arguments& args);
+	NAN_METHOD(statJpeg);
+	NAN_METHOD(decodeJpeg);
+	NAN_METHOD(decodeJpegSync);
+	NAN_METHOD(encodeJpeg);
+	NAN_METHOD(encodeJpegSync);
 
 }
 

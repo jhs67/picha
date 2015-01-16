@@ -5,8 +5,8 @@
 
 namespace picha {
 
-	Handle<Value> colorConvert(const Arguments& args);
-	Handle<Value> colorConvertSync(const Arguments& args);
+	NAN_METHOD(colorConvert);
+	NAN_METHOD(colorConvertSync);
 
 	struct ColorSettings {
 		ColorSettings() : rFactor(0.299f), gFactor(0.587f), bFactor(0.114) {}

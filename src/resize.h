@@ -5,8 +5,8 @@
 
 namespace picha {
 
-	Handle<Value> resize(const Arguments& args);
-	Handle<Value> resizeSync(const Arguments& args);
+	NAN_METHOD(resize);
+	NAN_METHOD(resizeSync);
 }
 
 #endif // picha_resize_h_

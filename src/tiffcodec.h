@@ -5,11 +5,11 @@
 
 namespace picha {
 
-	Handle<Value> statTiff(const Arguments& args);
-	Handle<Value> decodeTiff(const Arguments& args);
-	Handle<Value> decodeTiffSync(const Arguments& args);
-	Handle<Value> encodeTiff(const Arguments& args);
-	Handle<Value> encodeTiffSync(const Arguments& args);
+	NAN_METHOD(statTiff);
+	NAN_METHOD(decodeTiff);
+	NAN_METHOD(decodeTiffSync);
+	NAN_METHOD(encodeTiff);
+	NAN_METHOD(encodeTiffSync);
 
 }
 

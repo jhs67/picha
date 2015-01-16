@@ -5,11 +5,11 @@
 
 namespace picha {
 
-	Handle<Value> statWebP(const Arguments& args);
-	Handle<Value> decodeWebP(const Arguments& args);
-	Handle<Value> decodeWebPSync(const Arguments& args);
-	Handle<Value> encodeWebP(const Arguments& args);
-	Handle<Value> encodeWebPSync(const Arguments& args);
+	NAN_METHOD(statWebP);
+	NAN_METHOD(decodeWebP);
+	NAN_METHOD(decodeWebPSync);
+	NAN_METHOD(encodeWebP);
+	NAN_METHOD(encodeWebPSync);
 
 }
 
