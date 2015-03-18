@@ -71,6 +71,19 @@ namespace picha {
 		return r;
 	}
 
+	NativeImage newNativeImage(int w, int h, PixelMode pixel) {
+		NativeImage r;
+		r.width = w;
+		r.height = h;
+		r.stride = NativeImage::row_stride(w, pixel);
+		r.data = new PixelType[r.height * r.stride];
+	}
+
+	void freeNativeImage(NativeImage& image) {
+		delete[] image.data;
+		image.data = 0;
+	}
+
 	Local<Object> nativeImageToJsImage(NativeImage& cimage) {
 		Local<Object> image = NanNew<Object>();
 		image->Set(NanNew(width_symbol), NanNew<Integer>(cimage.width));
