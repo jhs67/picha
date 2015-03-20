@@ -75,8 +75,10 @@ namespace picha {
 		NativeImage r;
 		r.width = w;
 		r.height = h;
+		r.pixel = pixel;
 		r.stride = NativeImage::row_stride(w, pixel);
 		r.data = new PixelType[r.height * r.stride];
+		return r;
 	}
 
 	void freeNativeImage(NativeImage& image) {
