@@ -89,4 +89,17 @@ describe('webp_codec', function() {
 			assert(image.avgChannelDiff(syncImage) < 8);
 		});
 	});
+	describe("greymap encode", function() {
+		var greyimg, webpfile;
+		it("should load greyscale image", function() {
+			greyimg = picha.decodeSync(fs.readFileSync(path.join(__dirname, "greytest.png")));
+		});
+		it("should webp encode the greyscale", function() {
+			webpfile = picha.encodeWebPSync(greyimg, { preset: 'lossless' });
+		});
+		it("should round trip the greyscale", function() {
+			var rt = picha.decodeWebPSync(webpfile);
+			assert.notEqual(rt, null);
+		});
+	});
 });

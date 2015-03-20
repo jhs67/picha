@@ -16,9 +16,12 @@ describe('color_convert', function() {
 		var f = fs.readFileSync(path.join(__dirname, "test.png"));
 		rgbImage = picha.decodeSync(f);
 		greyImage = picha.decodeSync(fs.readFileSync(path.join(__dirname, "greytest.png")));
+		assert.equal(rgbImage.pixel, 'rgba');
+		assert.equal(greyImage.pixel, 'greya');
 	});
 	it("conversion to grey should match", function() {
 		var toGrey = picha.colorConvertSync(rgbImage, { pixel: 'greya' });
+		assert.equal(toGrey.pixel, 'greya');
 		assert.equal(toGrey.width, rgbImage.width);
 		assert.equal(toGrey.height, rgbImage.height);
 		assert.equal(toGrey.pixel, 'greya');
