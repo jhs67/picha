@@ -15,7 +15,7 @@ namespace picha {
 
 		void write(char * data, size_t length);
 		void seek(size_t o, int whence);
-		char * consolidate();
+		char * consolidate_();
 
 		//--
 
@@ -25,7 +25,7 @@ namespace picha {
 			size_t length;
 			WriteBlock * next;
 			WriteBlock() : data(0), next(0) {}
-			~WriteBlock() { delete data; delete next; }
+			~WriteBlock() { if (data) free(data); delete next; }
 		};
 
 		static const size_t min_block = 64 * 1024;

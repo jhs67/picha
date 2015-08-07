@@ -57,11 +57,12 @@ namespace picha {
 	SSYMBOL(alphaQuality)\
 	/**/
 
-#	define SSYMBOL(a) extern Persistent<String> a ## _symbol;
+#	define SSYMBOL(a) extern Nan::Persistent<String> a ## _symbol;
 	STATIC_SYMBOLS
 #	undef SSYMBOL
 
-	void makeCallback(Handle<Function> cb, const char * error, Handle<Value> v);
+	inline Local<String> makeSymbol(const char *n) { return Nan::New(n).ToLocalChecked(); }
+	void makeCallback(Local<Function> cb, const char * error, Handle<Value> v);
 
 
 	//--------------------------------------------------------------------------------------------------

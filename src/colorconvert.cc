@@ -6,13 +6,13 @@ namespace picha {
 	void getSettings(ColorSettings& s, Handle<Object> opts) {
 		double d;
 		Local<Value> v;
-		v = opts->Get(NanNew(redWeight_symbol));
+		v = opts->Get(Nan::New(redWeight_symbol));
 		d = v->NumberValue();
 		if (d == d) s.rFactor = d;
-		v = opts->Get(NanNew(greenWeight_symbol));
+		v = opts->Get(Nan::New(greenWeight_symbol));
 		d = v->NumberValue();
 		if (d == d) s.gFactor = d;
-		v = opts->Get(NanNew(blueWeight_symbol));
+		v = opts->Get(Nan::New(blueWeight_symbol));
 		d = v->NumberValue();
 		if (d == d) s.bFactor = d;
 		float n = 1.0f / (s.rFactor + s.gFactor + s.bFactor);
@@ -170,9 +170,9 @@ namespace picha {
 	}
 
 	struct ColorConvertContext {
-		Persistent<Object> dstimage;
-		Persistent<Object> buffer;
-		Persistent<Function> cb;
+		Nan::Persistent<Object> dstimage;
+		Nan::Persistent<Object> buffer;
+		Nan::Persistent<Function> cb;
 		NativeImage src;
 		NativeImage dst;
 		ColorSettings cs;
@@ -184,45 +184,43 @@ namespace picha {
 	}
 
 	void V8_colorConvert(uv_work_t* work_req, int) {
-		NanScope();
+		Nan::HandleScope scope;
 		ColorConvertContext *ctx = reinterpret_cast<ColorConvertContext*>(work_req->data);
-		makeCallback(NanNew(ctx->cb), 0, NanNew(ctx->dstimage));
-		NanDisposePersistent(ctx->dstimage);
-		NanDisposePersistent(ctx->buffer);
-		NanDisposePersistent(ctx->cb);
+		makeCallback(Nan::New(ctx->cb), 0, Nan::New(ctx->dstimage));
+		ctx->dstimage.Reset();
+		ctx->buffer.Reset();
+		ctx->cb.Reset();
 		delete work_req;
 		delete ctx;
 	}
 
 	NAN_METHOD(colorConvert) {
-		NanScope();
-
-		if (args.Length() != 3 || !args[0]->IsObject() || !args[1]->IsObject() || !args[2]->IsFunction()) {
-			NanThrowError("expected: colorConvert(image, opts, cb)");
-			NanReturnUndefined();
+		if (info.Length() != 3 || !info[0]->IsObject() || !info[1]->IsObject() || !info[2]->IsFunction()) {
+			Nan::ThrowError("expected: colorConvert(image, opts, cb)");
+			return;
 		}
-		Local<Object> img = args[0]->ToObject();
-		Local<Object> opts = args[1]->ToObject();
-		Local<Function> cb = Local<Function>::Cast(args[2]);
+		Local<Object> img = info[0]->ToObject();
+		Local<Object> opts = info[1]->ToObject();
+		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		NativeImage src;
 		src = jsImageToNativeImage(img);
 		if (!src.data) {
-			NanThrowError("invalid image");
-			NanReturnUndefined();
+			Nan::ThrowError("invalid image");
+			return;
 		}
 
-		PixelMode toPixel = pixelSymbolToEnum(opts->Get(NanNew(pixel_symbol)));
+		PixelMode toPixel = pixelSymbolToEnum(opts->Get(Nan::New(pixel_symbol)));
 		if (toPixel == INVALID_PIXEL) {
-			NanThrowError("expected pixel mode");
-			NanReturnUndefined();
+			Nan::ThrowError("expected pixel mode");
+			return;
 		}
 
 		ColorConvertContext *ctx = new ColorConvertContext;
 		Local<Object> dstimage = newJsImage(src.width, src.height, toPixel);
-		NanAssignPersistent(ctx->dstimage, dstimage);
-		NanAssignPersistent(ctx->buffer, img);
-		NanAssignPersistent(ctx->cb, cb);
+		ctx->dstimage.Reset(dstimage);
+		ctx->buffer.Reset(img);
+		ctx->cb.Reset(cb);
 		ctx->dst = jsImageToNativeImage(dstimage);
 		assert(ctx->dst.data != 0);
 		ctx->src = src;
@@ -232,31 +230,27 @@ namespace picha {
 		uv_work_t* work_req = new uv_work_t();
 		work_req->data = ctx;
 		uv_queue_work(uv_default_loop(), work_req, UV_colorConvert, V8_colorConvert);
-
-		NanReturnUndefined();
 	}
 
 	NAN_METHOD(colorConvertSync) {
-		NanScope();
-
-		if (args.Length() != 2 || !args[0]->IsObject() || !args[1]->IsObject()) {
-			NanThrowError("expected: colorConvertSync(image, opts)");
-			NanReturnUndefined();
+		if (info.Length() != 2 || !info[0]->IsObject() || !info[1]->IsObject()) {
+			Nan::ThrowError("expected: colorConvertSync(image, opts)");
+			return;
 		}
-		Local<Object> img = args[0]->ToObject();
-		Local<Object> opts = args[1]->ToObject();
+		Local<Object> img = info[0]->ToObject();
+		Local<Object> opts = info[1]->ToObject();
 
 		NativeImage src;
 		src = jsImageToNativeImage(img);
 		if (!src.data) {
-			NanThrowError("invalid image");
-			NanReturnUndefined();
+			Nan::ThrowError("invalid image");
+			return;
 		}
 
-		PixelMode toPixel = pixelSymbolToEnum(opts->Get(NanNew(pixel_symbol)));
+		PixelMode toPixel = pixelSymbolToEnum(opts->Get(Nan::New(pixel_symbol)));
 		if (toPixel == INVALID_PIXEL) {
-			NanThrowError("expected pixel mode");
-			NanReturnUndefined();
+			Nan::ThrowError("expected pixel mode");
+			return;
 		}
 
 		ColorSettings cs;
@@ -267,7 +261,7 @@ namespace picha {
 
 		doColorConvert(cs, src, dst);
 
-		NanReturnValue(dstimage);
+		info.GetReturnValue().Set(dstimage);
 	}
 
 }

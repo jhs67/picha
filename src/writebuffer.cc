@@ -14,7 +14,7 @@ namespace picha {
 				if (cblock == 0 || cblock->next == 0) {
 					WriteBlock * n = new WriteBlock;
 					n->length = length > min_block ? length : min_block;
-					n->data = new char[n->length];
+					n->data = reinterpret_cast<char*>(malloc(n->length));
 					n->start = cursor;
 					if (cblock == 0) cblock = hblock = n;
 					else cblock = cblock->next = n;
@@ -46,7 +46,7 @@ namespace picha {
 				if (cblock == 0 || cblock->next == 0) {
 					WriteBlock * n = new WriteBlock;
 					n->length = length + min_block;
-					n->data = new char[n->length];
+					n->data = reinterpret_cast<char*>(malloc(n->length));
 					memset(n->data, 0, length);
 					n->start = cursor;
 					if (cblock == 0) cblock = hblock = n;
@@ -78,7 +78,7 @@ namespace picha {
 		}
 	}
 
-	char * WriteBuffer::consolidate() {
+	char * WriteBuffer::consolidate_() {
 		char * r = 0;
 		if (hblock != 0) {
 			if (hblock->next == 0) {
@@ -86,7 +86,7 @@ namespace picha {
 				hblock->data = 0;
 			}
 			else {
-				r = new char[totallen];
+				r = reinterpret_cast<char*>(malloc(totallen));
 				for (WriteBlock * b = hblock; b != 0; b = b->next) {
 					size_t l = b->length > totallen - b->start ? totallen - b->start : b->length;
 					memcpy(r + b->start, b->data, l);

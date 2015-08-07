@@ -145,9 +145,9 @@ namespace picha {
 	//---------------------------------------------------------------------------------------------------------
 
 	struct TiffDecodeCtx {
-		Persistent<Object> dstimage;
-		Persistent<Object> buffer;
-		Persistent<Function> cb;
+		Nan::Persistent<Object> dstimage;
+		Nan::Persistent<Object> buffer;
+		Nan::Persistent<Function> cb;
 
 		TiffReader reader;
 		NativeImage dst;
@@ -160,32 +160,30 @@ namespace picha {
 	}
 
 	void V8_decodeTiff(uv_work_t* work_req, int) {
-		NanScope();
+		Nan::HandleScope scope;
 		TiffDecodeCtx *ctx = reinterpret_cast<TiffDecodeCtx*>(work_req->data);
-		makeCallback(NanNew(ctx->cb), ctx->reader.error.empty() ? 0 : ctx->reader.error.c_str(), NanNew(ctx->dstimage));
-		NanDisposePersistent(ctx->dstimage);
-		NanDisposePersistent(ctx->buffer);
-		NanDisposePersistent(ctx->cb);
+		makeCallback(Nan::New(ctx->cb), ctx->reader.error.empty() ? 0 : ctx->reader.error.c_str(), Nan::New(ctx->dstimage));
+		ctx->dstimage.Reset();
+		ctx->buffer.Reset();
+		ctx->cb.Reset();
 		delete work_req;
 		delete ctx;
 	}
 
 	NAN_METHOD(decodeTiff) {
-		NanScope();
-
-		if (args.Length() != 3 || !Buffer::HasInstance(args[0]) || !args[1]->IsObject() || !args[2]->IsFunction()) {
-			NanThrowError("expected: decodeTiff(srcbuffer, opts, cb)");
-			NanReturnUndefined();
+		if (info.Length() != 3 || !Buffer::HasInstance(info[0]) || !info[1]->IsObject() || !info[2]->IsFunction()) {
+			Nan::ThrowError("expected: decodeTiff(srcbuffer, opts, cb)");
+			return;
 		}
-		Local<Object> srcbuf = args[0]->ToObject();
-		Local<Object> opts = args[1]->ToObject();
-		Local<Function> cb = Local<Function>::Cast(args[2]);
+		Local<Object> srcbuf = info[0]->ToObject();
+		Local<Object> opts = info[1]->ToObject();
+		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		char* srcdata = Buffer::Data(srcbuf);
 		size_t srclen = Buffer::Length(srcbuf);
 
 		int idx = 0;
-		Local<Value> jidx = opts->Get(NanNew(index_symbol));
+		Local<Value> jidx = opts->Get(Nan::New(index_symbol));
 		if (jidx->IsNumber())
 			idx = jidx->Uint32Value();
 
@@ -193,46 +191,42 @@ namespace picha {
 		ctx->reader.open(srcdata, srclen, idx);
 		if (!ctx->reader.error.empty()) {
 			delete ctx;
-			makeCallback(cb, ctx->reader.error.empty() ? 0 : ctx->reader.error.c_str(), NanUndefined());
-			NanReturnUndefined();
+			makeCallback(cb, ctx->reader.error.empty() ? 0 : ctx->reader.error.c_str(), Nan::Undefined());
+			return;
 		}
 
 		Local<Object> jsdst = newJsImage(ctx->reader.width(), ctx->reader.height(), RGBA_PIXEL);
-		NanAssignPersistent(ctx->dstimage, jsdst);
-		NanAssignPersistent(ctx->buffer, srcbuf);
-		NanAssignPersistent(ctx->cb, cb);
+		ctx->dstimage.Reset(jsdst);
+		ctx->buffer.Reset(srcbuf);
+		ctx->cb.Reset(cb);
 		ctx->dst = jsImageToNativeImage(jsdst);
 
 		uv_work_t* work_req = new uv_work_t();
 		work_req->data = ctx;
 		uv_queue_work(uv_default_loop(), work_req, UV_decodeTiff, V8_decodeTiff);
-
-		NanReturnUndefined();
 	}
 
 	NAN_METHOD(decodeTiffSync) {
-		NanScope();
-
-		if (args.Length() != 2 || !Buffer::HasInstance(args[0])) {
-			NanThrowError("expected: decodeTiffSync(srcbuffer, opts)");
-			NanReturnUndefined();
+		if (info.Length() != 2 || !Buffer::HasInstance(info[0])) {
+			Nan::ThrowError("expected: decodeTiffSync(srcbuffer, opts)");
+			return;
 		}
-		Local<Object> srcbuf = args[0]->ToObject();
-		Local<Object> opts = args[1]->ToObject();
+		Local<Object> srcbuf = info[0]->ToObject();
+		Local<Object> opts = info[1]->ToObject();
 
 		char* srcdata = Buffer::Data(srcbuf);
 		size_t srclen = Buffer::Length(srcbuf);
 
 		int idx = 0;
-		Local<Value> jidx = opts->Get(NanNew(index_symbol));
+		Local<Value> jidx = opts->Get(Nan::New(index_symbol));
 		if (jidx->IsNumber())
 			idx = jidx->Uint32Value();
 
 		TiffReader reader;
 		reader.open(srcdata, srclen, idx);
 		if (!reader.error.empty()) {
-			NanThrowError(reader.error.c_str());
-			NanReturnUndefined();
+			Nan::ThrowError(reader.error.c_str());
+			return;
 		}
 
 		Local<Object> jsdst = newJsImage(reader.width(), reader.height(), RGBA_PIXEL);
@@ -241,32 +235,30 @@ namespace picha {
 		reader.close();
 
 		if (!reader.error.empty()) {
-			NanThrowError(reader.error.c_str());
-			NanReturnUndefined();
+			Nan::ThrowError(reader.error.c_str());
+			return;
 		}
 
-		NanReturnValue(jsdst);
+		info.GetReturnValue().Set(jsdst);
 	}
 
 	NAN_METHOD(statTiff) {
-		NanScope();
-
-		if (args.Length() != 1 || !Buffer::HasInstance(args[0])) {
-			NanThrowError("expected: statTiff(srcbuffer)");
-			NanReturnUndefined();
+		if (info.Length() != 1 || !Buffer::HasInstance(info[0])) {
+			Nan::ThrowError("expected: statTiff(srcbuffer)");
+			return;
 		}
-		Local<Object> srcbuf = args[0]->ToObject();
+		Local<Object> srcbuf = info[0]->ToObject();
 
 		TiffReader reader;
 		reader.open(Buffer::Data(srcbuf), Buffer::Length(srcbuf), 0);
 		if (!reader.error.empty())
-			NanReturnUndefined();
+			return;
 
-		Local<Object> stat = NanNew<Object>();
-		stat->Set(NanNew(width_symbol), NanNew<Integer>(reader.width()));
-		stat->Set(NanNew(height_symbol), NanNew<Integer>(reader.height()));
-		stat->Set(NanNew(pixel_symbol), pixelEnumToSymbol(RGBA_PIXEL));
-		NanReturnValue(stat);
+		Local<Object> stat = Nan::New<Object>();
+		stat->Set(Nan::New(width_symbol), Nan::New<Integer>(reader.width()));
+		stat->Set(Nan::New(height_symbol), Nan::New<Integer>(reader.height()));
+		stat->Set(Nan::New(pixel_symbol), pixelEnumToSymbol(RGBA_PIXEL));
+		info.GetReturnValue().Set(stat);
 	}
 
 
@@ -340,16 +332,16 @@ namespace picha {
 	//---------------------------------------------------------------------------------------------------------
 
 	struct TiffEncodeCtx {
-		TiffEncodeCtx() : dstdata(0) {}
+		TiffEncodeCtx() : dstdata_(0) {}
 
-		Persistent<Value> buffer;
-		Persistent<Function> cb;
+		Nan::Persistent<Value> buffer;
+		Nan::Persistent<Function> cb;
 
 		TiffWriter writer;
 		NativeImage image;
 		int comp;
 
-		char *dstdata;
+		char *dstdata_;
 		size_t dstlen;
 	};
 
@@ -357,39 +349,48 @@ namespace picha {
 		TiffEncodeCtx *ctx = reinterpret_cast<TiffEncodeCtx*>(work_req->data);
 		ctx->writer.write(ctx->image, ctx->comp);
 		ctx->dstlen = ctx->writer.buffer.totallen;
-		ctx->dstdata = ctx->writer.buffer.consolidate();
+		ctx->dstdata_ = ctx->writer.buffer.consolidate_();
 	}
 
 	void V8_encodeTiff(uv_work_t* work_req, int) {
-		NanScope();
+		Nan::HandleScope scope;
+
 		TiffEncodeCtx *ctx = reinterpret_cast<TiffEncodeCtx*>(work_req->data);
 
 		std::string error;
 		error.swap(ctx->writer.error);
 		size_t dstlen = ctx->dstlen;
-		char * dstdata = ctx->dstdata;
-		Local<Function> cb = NanNew(ctx->cb);
-		NanDisposePersistent(ctx->buffer);
-		NanDisposePersistent(ctx->cb);
+		char * dstdata_ = ctx->dstdata_;
+		Local<Function> cb = Nan::New(ctx->cb);
+		ctx->buffer.Reset();
+		ctx->cb.Reset();
 		delete work_req;
 		delete ctx;
 
 		Local<Value> e, r;
 		if (!error.empty()) {
-			e = Exception::Error(NanNew<String>(error.c_str()));
-			r = NanUndefined();
+			e = Nan::Error(error.c_str());
+			r = Nan::Undefined();
 		}
 		else {
-			e = NanUndefined();
-			r = NanNewBufferHandle(dstdata, dstlen);
+			Local<Object> o;
+			e = Nan::Undefined();
+			if (Nan::NewBuffer(reinterpret_cast<char*>(dstdata_), dstlen).ToLocal(&o)) {
+				r = o;
+				dstdata_ = 0;
+			}
+			else {
+				r = Nan::Undefined();
+			}
 		}
 
-		delete[] dstdata;
+		if (dstdata_)
+			free(dstdata_);
 
 		TryCatch try_catch;
 
-		Handle<Value> argv[2] = { e, r };
-		NanMakeCallback(NanGetCurrentContext()->Global(), cb, 2, argv);
+		Local<Value> argv[2] = { e, r };
+		Nan::MakeCallback(Nan::GetCurrentContext()->Global(), cb, 2, argv);
 
 		if (try_catch.HasCaught())
 			FatalException(try_catch);
@@ -408,7 +409,7 @@ namespace picha {
 
 		bool getTiffCompression(Handle<Value> jcomp, int& comp) {
 			for (int i = 0; i < TiffCompressionCount; ++i) {
-				if (jcomp->StrictEquals(NanNew(*TiffCompressionModes[i].symbol))) {
+				if (jcomp->StrictEquals(Nan::New(*TiffCompressionModes[i].symbol))) {
 					comp = TiffCompressionModes[i].tag;
 					return true;
 				}
@@ -418,76 +419,78 @@ namespace picha {
 	}
 
 	NAN_METHOD(encodeTiff) {
-		NanScope();
-
-		if (args.Length() != 3 || !args[0]->IsObject() || !args[1]->IsObject() || !args[2]->IsFunction()) {
-			NanThrowError("expected: encodeTiff(image, opts, cb)");
-			NanReturnUndefined();
+		if (info.Length() != 3 || !info[0]->IsObject() || !info[1]->IsObject() || !info[2]->IsFunction()) {
+			Nan::ThrowError("expected: encodeTiff(image, opts, cb)");
+			return;
 		}
-		Local<Object> img = args[0]->ToObject();
-		Local<Object> opts = args[1]->ToObject();
-		Local<Function> cb = Local<Function>::Cast(args[2]);
+		Local<Object> img = info[0]->ToObject();
+		Local<Object> opts = info[1]->ToObject();
+		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		int comp = COMPRESSION_LZW;
-		if (opts->Has(NanNew(compression_symbol)) && !getTiffCompression(opts->Get(NanNew(compression_symbol)), comp)) {
-			NanThrowError("invalid compression option");
-			NanReturnUndefined();
+		if (opts->Has(Nan::New(compression_symbol)) && !getTiffCompression(opts->Get(Nan::New(compression_symbol)), comp)) {
+			Nan::ThrowError("invalid compression option");
+			return;
 		}
 
 		TiffEncodeCtx * ctx = new TiffEncodeCtx;
 		ctx->image = jsImageToNativeImage(img);
 		if (!ctx->image.data) {
 			delete ctx;
-			NanThrowError("invalid image");
-			NanReturnUndefined();
+			Nan::ThrowError("invalid image");
+			return;
 		}
 
-		NanAssignPersistent(ctx->buffer, img->Get(NanNew(data_symbol)));
-		NanAssignPersistent(ctx->cb, cb);
+		ctx->buffer.Reset(img->Get(Nan::New(data_symbol)));
+		ctx->cb.Reset(cb);
 		ctx->comp = comp;
 
 		uv_work_t* work_req = new uv_work_t();
 		work_req->data = ctx;
 		uv_queue_work(uv_default_loop(), work_req, UV_encodeTiff, V8_encodeTiff);
-
-		NanReturnUndefined();
 	}
 
 	NAN_METHOD(encodeTiffSync) {
-		NanScope();
-
-		if (args.Length() != 2 || !args[0]->IsObject() || !args[1]->IsObject()) {
-			NanThrowError("expected: encodeTiffSync(image, opts)");
-			NanReturnUndefined();
+		if (info.Length() != 2 || !info[0]->IsObject() || !info[1]->IsObject()) {
+			Nan::ThrowError("expected: encodeTiffSync(image, opts)");
+			return;
 		}
-		Local<Object> img = args[0]->ToObject();
-		Local<Object> opts = args[1]->ToObject();
+		Local<Object> img = info[0]->ToObject();
+		Local<Object> opts = info[1]->ToObject();
 
 		int comp = COMPRESSION_LZW;
-		if (opts->Has(NanNew(compression_symbol)) && !getTiffCompression(opts->Get(NanNew(compression_symbol)), comp)) {
-			NanThrowError("invalid compression option");
-			NanReturnUndefined();
+		if (opts->Has(Nan::New(compression_symbol)) && !getTiffCompression(opts->Get(Nan::New(compression_symbol)), comp)) {
+			Nan::ThrowError("invalid compression option");
+			return;
 		}
 
 		TiffWriter writer;
 		NativeImage image = jsImageToNativeImage(img);
 		if (!image.data) {
-			NanThrowError("invalid image");
-			NanReturnUndefined();
+			Nan::ThrowError("invalid image");
+			return;
 		}
 
 		writer.write(image, comp);
 
-		Local<Value> r = NanUndefined();
+		Local<Value> r;
 		if (!writer.error.empty()) {
-			NanThrowError(writer.error.c_str());
+			Nan::ThrowError(writer.error.c_str());
 		}
 		else {
-			size_t len = writer.buffer.totallen;
-			r = NanNewBufferHandle(writer.buffer.consolidate(), len);
+			Local<Object> o;
+			size_t dstlen = writer.buffer.totallen;
+			char * dstdata_ = writer.buffer.consolidate_();
+			if (Nan::NewBuffer(dstdata_, dstlen).ToLocal(&o)) {
+				r = o;
+			}
+			else {
+				free(dstdata_);
+				r = Nan::Undefined();
+			}
 		}
 
-		NanReturnValue(r);
+		info.GetReturnValue().Set(r);
 	}
 
 }

@@ -167,7 +167,7 @@ namespace picha {
 
 	ResizeFilterTag symbolToResizeFilter(Handle<Value> s) {
 		for (int i = 0; i < InvalidFilterTag; ++i)
-			if (s->StrictEquals(NanNew(*resizeFilterSymbols[i])))
+			if (s->StrictEquals(Nan::New(*resizeFilterSymbols[i])))
 				return static_cast<ResizeFilterTag>(i);
 		return InvalidFilterTag;
 	}
@@ -179,20 +179,20 @@ namespace picha {
 	};
 
 	bool getResizeOptions(ResizeOptions& s, Handle<Object> opts) {
-		Local<Value> v = opts->Get(NanNew(filter_symbol));
+		Local<Value> v = opts->Get(Nan::New(filter_symbol));
 		if (!v->IsUndefined()) {
 			s.width = 1.0f;
-			s.filter = symbolToResizeFilter(opts->Get(NanNew(filter_symbol)));
+			s.filter = symbolToResizeFilter(opts->Get(Nan::New(filter_symbol)));
 			if (s.filter == InvalidFilterTag) {
-				NanThrowError("invalid filter mode");
+				Nan::ThrowError("invalid filter mode");
 				return false;
 			}
 		}
-		v = opts->Get(NanNew(filterScale_symbol));
+		v = opts->Get(Nan::New(filterScale_symbol));
 		if (!v->IsUndefined()) {
 			s.width = v->NumberValue();
 			if (s.width != s.width || s.width <= 0) {
-				NanThrowError("invalid filter width");
+				Nan::ThrowError("invalid filter width");
 				return false;
 			}
 		}
@@ -282,9 +282,9 @@ namespace picha {
 	}
 
 	struct ResizeContext {
-		Persistent<Value> srcbuffer;
-		Persistent<Object> dstimage;
-		Persistent<Function> cb;
+		Nan::Persistent<Value> srcbuffer;
+		Nan::Persistent<Object> dstimage;
+		Nan::Persistent<Function> cb;
 		ResizeOptions opts;
 		NativeImage src;
 		NativeImage dst;
@@ -296,22 +296,22 @@ namespace picha {
 	}
 
 	void V8_resize(uv_work_t* work_req, int) {
-		NanScope();
+		Nan::HandleScope scope;
 
 		ResizeContext *ctx = reinterpret_cast<ResizeContext*>(work_req->data);
 
-		Local<Value> dst = NanNew(ctx->dstimage);
-		Local<Function> cb = NanNew<Function>(ctx->cb);
-		NanDisposePersistent(ctx->srcbuffer);
-		NanDisposePersistent(ctx->dstimage);
-		NanDisposePersistent(ctx->cb);
+		Local<Value> dst = Nan::New(ctx->dstimage);
+		Local<Function> cb = Nan::New<Function>(ctx->cb);
+		ctx->srcbuffer.Reset();
+		ctx->dstimage.Reset();
+		ctx->cb.Reset();
 		delete work_req;
 		delete ctx;
 
 		TryCatch try_catch;
 
-		Handle<Value> argv[2] = { NanUndefined(), dst };
-		NanMakeCallback(NanGetCurrentContext()->Global(), cb, 2, argv);
+		Local<Value> argv[2] = { Nan::Undefined(), dst };
+		Nan::MakeCallback(Nan::GetCurrentContext()->Global(), cb, 2, argv);
 
 		if (try_catch.HasCaught())
 			FatalException(try_catch);
@@ -320,40 +320,38 @@ namespace picha {
 	}
 
 	NAN_METHOD(resize) {
-		NanScope();
-
-		if (args.Length() != 3 || !args[0]->IsObject() || !args[1]->IsObject() || !args[2]->IsFunction()) {
-			NanThrowError("expected: resize(image, opts, cb)");
-			NanReturnUndefined();
+		if (info.Length() != 3 || !info[0]->IsObject() || !info[1]->IsObject() || !info[2]->IsFunction()) {
+			Nan::ThrowError("expected: resize(image, opts, cb)");
+			return;
 		}
-		Local<Object> img = args[0]->ToObject();
-		Local<Object> opts = args[1]->ToObject();
-		Local<Function> cb = Local<Function>::Cast(args[2]);
+		Local<Object> img = info[0]->ToObject();
+		Local<Object> opts = info[1]->ToObject();
+		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		NativeImage src;
 		src = jsImageToNativeImage(img);
 		if (!src.data) {
-			NanThrowError("invalid image");
-			NanReturnUndefined();
+			Nan::ThrowError("invalid image");
+			return;
 		}
 
-		int width = opts->Get(NanNew(width_symbol))->Uint32Value();
-		int height = opts->Get(NanNew(height_symbol))->Uint32Value();
+		int width = opts->Get(Nan::New(width_symbol))->Uint32Value();
+		int height = opts->Get(Nan::New(height_symbol))->Uint32Value();
 		if (width <= 0 || height <= 0) {
-			NanThrowError("invalid dimensions");
-			NanReturnUndefined();
+			Nan::ThrowError("invalid dimensions");
+			return;
 		}
 
 		ResizeOptions rsopts;
 		if (!getResizeOptions(rsopts, opts)) {
-			NanReturnUndefined();
+			return;
 		}
 
 		ResizeContext * ctx = new ResizeContext;
 		Local<Object> jsdst = newJsImage(width, height, src.pixel);
-		NanAssignPersistent(ctx->srcbuffer, img->Get(NanNew(data_symbol)));
-		NanAssignPersistent(ctx->dstimage, jsdst);
-		NanAssignPersistent(ctx->cb, cb);
+		ctx->srcbuffer.Reset(img->Get(Nan::New(data_symbol)));
+		ctx->dstimage.Reset(jsdst);
+		ctx->cb.Reset(cb);
 		ctx->dst = jsImageToNativeImage(jsdst);
 		ctx->opts = rsopts;
 		ctx->src = src;
@@ -361,37 +359,31 @@ namespace picha {
 		uv_work_t* work_req = new uv_work_t();
 		work_req->data = ctx;
 		uv_queue_work(uv_default_loop(), work_req, UV_resize, V8_resize);
-
-		NanReturnUndefined();
 	}
 
 	NAN_METHOD(resizeSync) {
-		NanScope();
-
-		if (args.Length() != 2 || !args[0]->IsObject() || !args[1]->IsObject()) {
-			NanThrowError("expected: resizeSync(image, opts)");
-			NanReturnUndefined();
+		if (info.Length() != 2 || !info[0]->IsObject() || !info[1]->IsObject()) {
+			Nan::ThrowError("expected: resizeSync(image, opts)");
+			return;
 		}
-		Local<Object> img = args[0]->ToObject();
-		Local<Object> opts = args[1]->ToObject();
+		Local<Object> img = info[0]->ToObject();
+		Local<Object> opts = info[1]->ToObject();
 
 		NativeImage src;
 		src = jsImageToNativeImage(img);
 		if (!src.data) {
-			NanThrowError("invalid image");
-			NanReturnUndefined();
+			Nan::ThrowError("invalid image");
 		}
 
-		int width = opts->Get(NanNew(width_symbol))->Uint32Value();
-		int height = opts->Get(NanNew(height_symbol))->Uint32Value();
+		int width = opts->Get(Nan::New(width_symbol))->Uint32Value();
+		int height = opts->Get(Nan::New(height_symbol))->Uint32Value();
 		if (width <= 0 || height <= 0) {
-			NanThrowError("invalid dimensions");
-			NanReturnUndefined();
+			Nan::ThrowError("invalid dimensions");
 		}
 
 		ResizeOptions rsopts;
 		if (!getResizeOptions(rsopts, opts)) {
-			NanReturnUndefined();
+			return;
 		}
 
 		Local<Object> jsdst = newJsImage(width, height, src.pixel);
@@ -399,7 +391,8 @@ namespace picha {
 
 		resizeImage(rsopts, src, dst);
 
-		NanReturnValue(jsdst);
+		info.GetReturnValue().Set(jsdst);
+		return;
 	}
 
 }
