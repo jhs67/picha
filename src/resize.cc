@@ -308,7 +308,7 @@ namespace picha {
 		delete work_req;
 		delete ctx;
 
-		TryCatch try_catch;
+		Nan::TryCatch try_catch;
 
 		Local<Value> argv[2] = { Nan::Undefined(), dst };
 		Nan::MakeCallback(Nan::GetCurrentContext()->Global(), cb, 2, argv);

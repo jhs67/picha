@@ -387,7 +387,7 @@ namespace picha {
 		if (dstdata_)
 			free(dstdata_);
 
-		TryCatch try_catch;
+		Nan::TryCatch try_catch;
 
 		Local<Value> argv[2] = { e, r };
 		Nan::MakeCallback(Nan::GetCurrentContext()->Global(), cb, 2, argv);

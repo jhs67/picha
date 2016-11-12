@@ -127,7 +127,7 @@ namespace picha {
 			argv[0] = Nan::Error(error);
 		}
 
-		TryCatch try_catch;
+		Nan::TryCatch try_catch;
 
 		Nan::MakeCallback(Nan::GetCurrentContext()->Global(), cb, 2, argv);
 
