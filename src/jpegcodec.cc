@@ -3,12 +3,13 @@
 #include <setjmp.h>
 #include <stdlib.h>
 #include <string.h>
-#include <jpeglib.h>
-#include <jerror.h>
 #include <node.h>
 #include <node_buffer.h>
 
 #include "jpegcodec.h"
+
+#include <jpeglib.h>
+#include <jerror.h>
 
 namespace picha {
 
