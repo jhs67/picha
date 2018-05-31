@@ -18,9 +18,9 @@ On Red Had and CentOS this is likely to get what you need:
 ```
 yum install libjpeg-devel libpng-devel libtiff-devel
 ```
-On MacOS using [MacPorts](http://www.macports.org/):
+On MacOS using [HomeBrew](https://brew.sh/):
 ```
-sudo port install jpeg libpng tiff webp
+brew install jpeg libpng webp libtiff
 ```
 Once the dependencies are installed use [npm](http://npmjs.org):
 ```
