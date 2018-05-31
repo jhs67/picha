@@ -20,10 +20,10 @@
     "crop"
   ],
   "dependencies": {
-    "nan": "^2.0.5"
+    "nan": "^2.10.0"
   },
   "devDependencies": {
-    "mocha": ">=1.9"
+    "mocha": "^5.2.0"
   },
   "author": "Jon Spencer <jon@jonspencer.ca>",
   "license": "MIT",
