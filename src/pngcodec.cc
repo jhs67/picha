@@ -407,7 +407,8 @@ namespace picha {
 		Nan::TryCatch try_catch;
 
 		Local<Value> argv[2] = { e, r };
-		Nan::MakeCallback(Nan::GetCurrentContext()->Global(), cb, 2, argv);
+		Nan::AsyncResource ass("picha");
+		ass.runInAsyncScope(Nan::GetCurrentContext()->Global(), cb, 2, argv);
 
 		if (try_catch.HasCaught())
 			FatalException(try_catch);
