@@ -1,8 +1,6 @@
 picha
 ======
 
-picha (swahili): photo
-
 I couldn't find a library or libraries to encode and decode jpeg and png images and also
 allow raw access to the pixel data - so I wrote one. There is also optional support
 for tiff and webp images. Color conversion, cropping, and resizing are also supported.
@@ -130,6 +128,7 @@ The optional opt object may specify:
 	alphaQuality: (0-100) quality for the alpha channel, default is 100,
 	preset: WebP compression preset
 			('default', 'lossless', 'picture', 'photo', 'drawing', 'icon', 'text'),
+	exact: true to preserve the color of transparent pixels,
 }
 ```
 

@@ -180,6 +180,9 @@ namespace picha {
 			if (r && opts->Has(Nan::New(alphaQuality_symbol)))
 				config.alpha_quality = getQuality(opts->Get(Nan::New(alphaQuality_symbol)), 100);
 
+			if (r && opts->Has(Nan::New(exact_symbol)))
+				config.exact = opts->Get(Nan::New(exact_symbol))->BooleanValue();
+
 			return r;
 		}
 

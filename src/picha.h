@@ -55,6 +55,7 @@ namespace picha {
 	SSYMBOL(default)\
 	SSYMBOL(icon)\
 	SSYMBOL(alphaQuality)\
+	SSYMBOL(exact)\
 	/**/
 
 #	define SSYMBOL(a) extern Nan::Persistent<String> a ## _symbol;
