@@ -309,11 +309,11 @@ namespace picha {
 			return;
 		}
 
-		int sampleperpixel = pixelWidth(image.pixel);
+		int sampleperpixel = pixelChannels(image.pixel);
 		TIFFSetField(tiff, TIFFTAG_IMAGEWIDTH, (uint32)image.width);
 		TIFFSetField(tiff, TIFFTAG_IMAGELENGTH, (uint32)image.height);
 		TIFFSetField(tiff, TIFFTAG_SAMPLESPERPIXEL, (uint16)sampleperpixel);
-		TIFFSetField(tiff, TIFFTAG_BITSPERSAMPLE, (uint16)8);
+		TIFFSetField(tiff, TIFFTAG_BITSPERSAMPLE, (uint16)(pixelBytes(image.pixel) / sampleperpixel * 8));
 		TIFFSetField(tiff,TIFFTAG_COMPRESSION,((uint16)comp));
 		TIFFSetField(tiff, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
 		TIFFSetField(tiff, TIFFTAG_PLANARCONFIG, (uint16)PLANARCONFIG_CONTIG);
@@ -495,7 +495,8 @@ namespace picha {
 	}
 
 	std::vector<PixelMode> getTiffEncodes() {
-		return std::vector<PixelMode>({ RGB_PIXEL, RGBA_PIXEL, GREY_PIXEL, GREYA_PIXEL });
+		return std::vector<PixelMode>({ RGB_PIXEL, RGBA_PIXEL, GREY_PIXEL, GREYA_PIXEL,
+			R16_PIXEL, R16G16_PIXEL, R16G16B16_PIXEL, R16G16B16A16_PIXEL, });
 	}
 
 }

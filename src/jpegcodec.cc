@@ -93,7 +93,7 @@ namespace picha {
 					JSAMPLE* p = (JSAMPLE*)(&buf[0]);
 					int r = jpeg_read_scanlines(&cinfo, &p, 1);
 					assert(r == 1);
-					cmyk_to_rgb(&buf[0], dst.row(y), dst.width);
+					cmyk_to_rgb(&buf[0], reinterpret_cast<uint8_t*>(dst.row(y)), dst.width);
 				}
 				delete[] buf;
 			}
@@ -349,7 +349,7 @@ namespace picha {
         jpeg_start_compress(&cinfo, true);
 
 		for (int y = 0; y < image.height; ++y) {
-			PixelType * p = image.row(y);
+			char * p = image.row(y);
 			jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(&p), 1);
 		}
 
@@ -371,7 +371,7 @@ namespace picha {
 
 		char * error = ctx->error;
 		size_t dstlen = ctx->dstlen;
-		PixelType * dstdata = ctx->dstdata;
+		uint8_t * dstdata = ctx->dstdata;
 		Local<Function> cb = Nan::New(ctx->cb);
 		ctx->buffer.Reset();
 		ctx->cb.Reset();

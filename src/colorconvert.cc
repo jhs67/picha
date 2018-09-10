@@ -21,95 +21,115 @@ namespace picha {
 		s.bFactor *= n;
 	}
 
-	template<PixelMode Src, PixelMode Dst> struct ColorConvertOp;
+	template <int Src, int Dst> struct ChannelConvertOp;
 
-	template <> struct ColorConvertOp<RGBA_PIXEL, RGB_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0];
-			dst[1] = src[1];
-			dst[2] = src[2];
+	template <int N>
+	struct ChannelConvertOp<N, N> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			for (int i = 0; i < N; ++i)
+				d[i] = s[i];
 		}
 	};
 
-	template <> struct ColorConvertOp<RGBA_PIXEL, GREYA_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0] * cs.rFactor + src[1] * cs.gFactor + src[2] * cs.bFactor + 0.5f;
-			dst[1] = src[3];
+	template <>
+	struct ChannelConvertOp<1, 2> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0];
+			d[1] = 1;
 		}
 	};
 
-	template <> struct ColorConvertOp<RGBA_PIXEL, GREY_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0] * cs.rFactor + src[1] * cs.gFactor + src[2] * cs.bFactor + 0.5f;
+	template <>
+	struct ChannelConvertOp<1, 3> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0];
+			d[1] = s[0];
+			d[2] = s[0];
 		}
 	};
 
-	template <> struct ColorConvertOp<RGB_PIXEL, RGBA_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0];
-			dst[1] = src[1];
-			dst[2] = src[2];
-			dst[3] = 255;
+	template <>
+	struct ChannelConvertOp<1, 4> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0];
+			d[1] = s[0];
+			d[2] = s[0];
+			d[3] = 1;
 		}
 	};
 
-	template <> struct ColorConvertOp<RGB_PIXEL, GREYA_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0] * cs.rFactor + src[1] * cs.gFactor + src[2] * cs.bFactor + 0.5f;
-			dst[1] = 255;
+	template <>
+	struct ChannelConvertOp<2, 1> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0];
 		}
 	};
 
-	template <> struct ColorConvertOp<RGB_PIXEL, GREY_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0] * cs.rFactor + src[1] * cs.gFactor + src[2] * cs.bFactor + 0.5f;
+	template <>
+	struct ChannelConvertOp<2, 3> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0];
+			d[1] = s[1];
+			d[2] = 0;
 		}
 	};
 
-	template <> struct ColorConvertOp<GREYA_PIXEL, RGBA_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0];
-			dst[1] = src[0];
-			dst[2] = src[0];
-			dst[3] = src[1];
+	template <>
+	struct ChannelConvertOp<2, 4> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0];
+			d[1] = s[0];
+			d[2] = s[0];
+			d[3] = s[1];
 		}
 	};
 
-	template <> struct ColorConvertOp<GREYA_PIXEL, RGB_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0];
-			dst[1] = src[0];
-			dst[2] = src[0];
+	template <>
+	struct ChannelConvertOp<3, 1> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0] * cs.rFactor + s[1] * cs.gFactor + s[2] * cs.bFactor;
 		}
 	};
 
-	template <> struct ColorConvertOp<GREYA_PIXEL, GREY_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0];
+	template <>
+	struct ChannelConvertOp<3, 2> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0] * cs.rFactor + s[1] * cs.gFactor + s[2] * cs.bFactor;
+			d[1] = 1;
 		}
 	};
 
-	template <> struct ColorConvertOp<GREY_PIXEL, RGBA_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0];
-			dst[1] = src[0];
-			dst[2] = src[0];
-			dst[3] = 255;
+	template <>
+	struct ChannelConvertOp<3, 4> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0];
+			d[1] = s[1];
+			d[2] = s[2];
+			d[3] = 1;
 		}
 	};
 
-	template <> struct ColorConvertOp<GREY_PIXEL, RGB_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0];
-			dst[1] = src[0];
-			dst[2] = src[0];
+	template <>
+	struct ChannelConvertOp<4, 1> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0] * cs.rFactor + s[1] * cs.gFactor + s[2] * cs.bFactor;
 		}
 	};
 
-	template <> struct ColorConvertOp<GREY_PIXEL, GREYA_PIXEL> {
-		static void op(const ColorSettings &cs, PixelType * src, PixelType * dst) {
-			dst[0] = src[0];
-			dst[1] = 255;
+	template <>
+	struct ChannelConvertOp<4, 2> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0] * cs.rFactor + s[1] * cs.gFactor + s[2] * cs.bFactor;
+			d[1] = s[3];
+		}
+	};
+
+	template <>
+	struct ChannelConvertOp<4, 3> {
+		static void op(const ColorSettings &cs, const float *s, float *d) {
+			d[0] = s[0];
+			d[1] = s[1];
+			d[2] = s[2];
 		}
 	};
 
@@ -119,54 +139,52 @@ namespace picha {
 			assert(dst.height == src.height);
 			assert(src.pixel == Src);
 			assert(dst.pixel == Dst);
+			float srcpack[PixelTraits<Src>::channels], dstpack[PixelTraits<Dst>::channels];
 			for (int i = 0; i < src.height; ++i) {
-				PixelType *s = src.row(i), *d = dst.row(i);
-				for (int j = 0; j < src.width; ++j, s += PixelWidth<Src>::value, d += PixelWidth<Dst>::value)
-					ColorConvertOp<Src, Dst>::op(cs, s, d);
+				char *s = src.row(i), *d = dst.row(i);
+				for (int j = 0; j < src.width; ++j, s += PixelTraits<Src>::bytes, d += PixelTraits<Dst>::bytes) {
+					PixelTraits<Src>::unpack(s, srcpack);
+					ChannelConvertOp<PixelTraits<Src>::channels, PixelTraits<Dst>::channels>::op(cs, srcpack, dstpack);
+					PixelTraits<Dst>::pack(dstpack, d);
+				}
 			}
 		}
 	};
 
 
-	void doColorConvert(const ColorSettings &cs, NativeImage& src, NativeImage& dst) {
-		switch (src.pixel) {
-			case RGBA_PIXEL :
-				switch (dst.pixel) {
-					case RGB_PIXEL : ColorConverter<RGBA_PIXEL, RGB_PIXEL>::op(cs, src, dst); return;
-					case GREYA_PIXEL : ColorConverter<RGBA_PIXEL, GREYA_PIXEL>::op(cs, src, dst); return;
-					case GREY_PIXEL : ColorConverter<RGBA_PIXEL, GREY_PIXEL>::op(cs, src, dst); return;
-					default: break;
-				}
-				break;
-			case RGB_PIXEL :
-				switch (dst.pixel) {
-					case RGBA_PIXEL : ColorConverter<RGB_PIXEL, RGBA_PIXEL>::op(cs, src, dst); return;
-					case GREYA_PIXEL : ColorConverter<RGB_PIXEL, GREYA_PIXEL>::op(cs, src, dst); return;
-					case GREY_PIXEL : ColorConverter<RGB_PIXEL, GREY_PIXEL>::op(cs, src, dst); return;
-					default: break;
-				}
-				break;
-			case GREYA_PIXEL :
-				switch (dst.pixel) {
-					case RGBA_PIXEL : ColorConverter<GREYA_PIXEL, RGBA_PIXEL>::op(cs, src, dst); return;
-					case RGB_PIXEL : ColorConverter<GREYA_PIXEL, RGB_PIXEL>::op(cs, src, dst); return;
-					case GREY_PIXEL : ColorConverter<GREYA_PIXEL, GREY_PIXEL>::op(cs, src, dst); return;
-					default: break;
-				}
-				break;
-			case GREY_PIXEL :
-				switch (dst.pixel) {
-					case RGBA_PIXEL : ColorConverter<GREY_PIXEL, RGBA_PIXEL>::op(cs, src, dst); return;
-					case RGB_PIXEL : ColorConverter<GREY_PIXEL, RGB_PIXEL>::op(cs, src, dst); return;
-					case GREYA_PIXEL : ColorConverter<GREY_PIXEL, GREYA_PIXEL>::op(cs, src, dst); return;
-					default: break;
-				}
-				break;
+	template <PixelMode Src>
+	void doSrcColorConvert(const ColorSettings &cs, NativeImage& src, NativeImage& dst) {
+		assert(src.pixel == Src);
+		switch (dst.pixel) {
+			case RGB_PIXEL : ColorConverter<Src, RGB_PIXEL>::op(cs, src, dst); return;
+			case RGBA_PIXEL : ColorConverter<Src, RGBA_PIXEL>::op(cs, src, dst); return;
+			case GREYA_PIXEL : ColorConverter<Src, GREYA_PIXEL>::op(cs, src, dst); return;
+			case GREY_PIXEL : ColorConverter<Src, GREY_PIXEL>::op(cs, src, dst); return;
+			case R16_PIXEL : ColorConverter<Src, R16_PIXEL>::op(cs, src, dst); return;
+			case R16G16_PIXEL : ColorConverter<Src, R16G16_PIXEL>::op(cs, src, dst); return;
+			case R16G16B16_PIXEL : ColorConverter<Src, R16G16B16_PIXEL>::op(cs, src, dst); return;
+			case R16G16B16A16_PIXEL : ColorConverter<Src, R16G16B16A16_PIXEL>::op(cs, src, dst); return;
 			default: break;
 		}
+	}
 
-		dst.copy(src);
-		return;
+	void doColorConvert(const ColorSettings &cs, NativeImage& src, NativeImage& dst) {
+		if (src.pixel == dst.pixel) {
+			dst.copy(src);
+			return;
+		}
+
+		switch (src.pixel) {
+			case RGB_PIXEL : doSrcColorConvert<RGB_PIXEL>(cs, src, dst); break;
+			case RGBA_PIXEL : doSrcColorConvert<RGBA_PIXEL>(cs, src, dst); break;
+			case GREYA_PIXEL : doSrcColorConvert<GREYA_PIXEL>(cs, src, dst); break;
+			case GREY_PIXEL : doSrcColorConvert<GREY_PIXEL>(cs, src, dst); break;
+			case R16_PIXEL : doSrcColorConvert<R16_PIXEL>(cs, src, dst); break;
+			case R16G16_PIXEL : doSrcColorConvert<R16G16_PIXEL>(cs, src, dst); break;
+			case R16G16B16_PIXEL : doSrcColorConvert<R16G16B16_PIXEL>(cs, src, dst); break;
+			case R16G16B16A16_PIXEL : doSrcColorConvert<R16G16B16A16_PIXEL>(cs, src, dst); break;
+			default: break;
+		}
 	}
 
 	struct ColorConvertContext {

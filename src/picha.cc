@@ -28,13 +28,14 @@ namespace picha {
 		assert(o.width == width);
 		assert(o.height == height);
 		assert(o.pixel == pixel);
-		int rw = width * pixel_size(pixel);
+		int rw = width * pixelBytes(pixel);
 		for (int h = 0; h < height; ++h)
 			memcpy(row(h), o.row(h), rw);
 	}
 
 	static Nan::Persistent<String>* const pixelSymbols[] = {
-		&rgb_symbol, &rgba_symbol, &grey_symbol, &greya_symbol
+		&rgb_symbol, &rgba_symbol, &grey_symbol, &greya_symbol,
+		&r16_symbol, &r16g16_symbol, &r16g16b16_symbol, &r16g16b16a16_symbol
 	};
 
 	Handle<Value> pixelEnumToSymbol(PixelMode t) {
@@ -69,9 +70,9 @@ namespace picha {
 			if (Buffer::HasInstance(data)) {
 				Local<Object> databuf = data->ToObject();
 				size_t len = Buffer::Length(databuf);
-				size_t rw = pixelWidth(r.pixel) * r.width;
+				size_t rw = pixelBytes(r.pixel) * r.width;
 				if (len >= r.height * size_t(r.stride) - r.stride + rw && r.height != 0) {
-					r.data = reinterpret_cast<PixelType*>(Buffer::Data(databuf));
+					r.data = Buffer::Data(databuf);
 				}
 			}
 		}
@@ -85,7 +86,7 @@ namespace picha {
 		r.height = h;
 		r.pixel = pixel;
 		r.stride = NativeImage::row_stride(w, pixel);
-		r.data = new PixelType[r.height * r.stride];
+		r.data = new char[r.height * r.stride];
 		return r;
 	}
 

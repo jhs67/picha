@@ -46,7 +46,7 @@ Construct a new image object from the options opt
 {
 	width: width of the image in pixels,
 	height: height of the image in pixels,
-	pixel: pixel format (rgb, rgba, grey, greya),
+	pixel: pixel format (rgb, rgba, grey, greya, r16, r16g16, r16g16b16, r16g16b16a16),
 	stride: row stride in bytes - defaults to 4 byte aligned rows,
 	data: buffer object of pixel data, if missing a buffer is allocated,
 }
@@ -92,8 +92,14 @@ handful of bytes of the image data is required. The function returns null or
 }
 ```
 
-### `picha.decode(buf, cb)`
+### `picha.decode(buf, opt, cb)`
 Decodes the supplied image data on a libuv thread and calls cb with (err, image).
+The optional `opt` object may specify:
+```
+{
+	deep: true to decode 16 bit images, false to convert to 8 bits
+}
+```
 
 ### `picha.decodeSync(buf)`
 Decodes the supplied image data on the v8 thread and returns the image.

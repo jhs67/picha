@@ -29,9 +29,9 @@ namespace picha {
 		uint8_t * out;
 		NativeImage& dst = ctx->dst;
 		if (dst.pixel == RGBA_PIXEL)
-			out = WebPDecodeRGBAInto(ctx->srcdata, ctx->srclen, dst.data, dst.stride * dst.height, dst.stride);
+			out = WebPDecodeRGBAInto(ctx->srcdata, ctx->srclen, reinterpret_cast<uint8_t*>(dst.data), dst.stride * dst.height, dst.stride);
 		else
-			out = WebPDecodeRGBInto(ctx->srcdata, ctx->srclen, dst.data, dst.stride * dst.height, dst.stride);
+			out = WebPDecodeRGBInto(ctx->srcdata, ctx->srclen, reinterpret_cast<uint8_t*>(dst.data), dst.stride * dst.height, dst.stride);
 		ctx->error = (out == 0);
 	}
 
@@ -98,9 +98,9 @@ namespace picha {
 
 		uint8_t * out;
 		if (feat.has_alpha)
-			out = WebPDecodeRGBAInto((const uint8_t*)srcdata, srclen, dst.data, dst.stride * dst.height, dst.stride);
+			out = WebPDecodeRGBAInto((const uint8_t*)srcdata, srclen, reinterpret_cast<uint8_t*>(dst.data), dst.stride * dst.height, dst.stride);
 		else
-			out = WebPDecodeRGBInto((const uint8_t*)srcdata, srclen, dst.data, dst.stride * dst.height, dst.stride);
+			out = WebPDecodeRGBInto((const uint8_t*)srcdata, srclen, reinterpret_cast<uint8_t*>(dst.data), dst.stride * dst.height, dst.stride);
 
 		if (out == 0) {
 			Nan::ThrowError("error decoding image");

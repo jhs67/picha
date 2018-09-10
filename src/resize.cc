@@ -63,10 +63,6 @@ namespace picha {
 		vector<float> data;
 	};
 
-	inline PixelType clampPixel(float v) {
-		return v < 0 ? 0 : v > 255 ? 255 : PixelType(v);
-	}
-
 	template <PixelMode Pixel, typename Filter>
 	void resizeImagePixel(NativeImage & src, NativeImage & dst, const Filter & filter) {
 		assert(src.pixel == Pixel);
@@ -83,8 +79,8 @@ namespace picha {
 		int maxycontrib = int(std::ceil(2 * yfsupport));
 
 		// A temporary image to hold resized rows as we move through the image.
-		const int pixelWidth = PixelWidth<Pixel>::value;
-		FloatBuffer tmp(dst.width, maxycontrib, pixelWidth);
+		const int pixelChannels = PixelTraits<Pixel>::channels;
+		FloatBuffer tmp(dst.width, maxycontrib, pixelChannels);
 
 		// Buffer to hold pre-calculated weights
 		PixelContribs contribs;
@@ -107,34 +103,32 @@ namespace picha {
 			// Resize any source rows needed for this row of the destination.
 			int needrow(std::min(src.height - 1, int(centery + yfsupport)));
 			while (srcrow <= needrow) {
-				PixelType * srcdata = src.row(srcrow);
+				float unpacked[pixelChannels];
+				char * srcdata = src.row(srcrow);
 				float * tmprow = tmp.row(srcrow % maxycontrib);
-				memset(tmprow, 0, sizeof(float) * pixelWidth * tmp.width);
+				memset(tmprow, 0, sizeof(float) * pixelChannels * tmp.width);
 				for (int x = 0; x < tmp.width; ++x) {
 					for (int c = rowcontribs[x].left, w = rowcontribs[x].weights; c <= rowcontribs[x].right; ++c, ++w) {
-						PixelType * srcpixel = &srcdata[c * pixelWidth];
-						for (int p = 0; p < pixelWidth; ++p)
-							tmprow[p] += contribs[w] * srcpixel[p];
+						PixelTraits<Pixel>::unpack(srcdata + c * PixelTraits<Pixel>::bytes, unpacked);
+						for (int p = 0; p < pixelChannels; ++p)
+							tmprow[p] += contribs[w] * unpacked[p];
 					}
-					tmprow += pixelWidth;
+					tmprow += pixelChannels;
 				}
 				++srcrow;
 			}
 
 			// Resize this row of the destination using the resized temporary rows.
-			PixelType * dstrow = dst.row(y);
+			char * dstrow = dst.row(y);
 			for (int x = 0; x < dst.width; ++x) {
-				float pixel[pixelWidth] = {};
+				float pixel[pixelChannels] = {};
 				for (int c = columncontribs[y].left, w = columncontribs[y].weights; c <= columncontribs[y].right; ++c, ++w) {
-					float * srcpixel = tmp.row(c % maxycontrib) + x * pixelWidth;
-					for (int p = 0; p < pixelWidth; ++p)
+					float * srcpixel = tmp.row(c % maxycontrib) + x * pixelChannels;
+					for (int p = 0; p < pixelChannels; ++p)
 						pixel[p] += contribs[w] * srcpixel[p];
 				}
-				for (int p = 0; p < pixelWidth; ++p)
-					dstrow[p] = pixel[p] < 0.0f ? PixelType(0) :
-								pixel[p] > 255.0f ? PixelType(255) :
-								PixelType(pixel[p] + 0.5f);
-				dstrow += pixelWidth;
+				PixelTraits<Pixel>::pack(pixel, dstrow);
+				dstrow += PixelTraits<Pixel>::bytes;
 			}
 		}
 	}
@@ -146,6 +140,10 @@ namespace picha {
 			case RGB_PIXEL : resizeImagePixel<RGB_PIXEL>(src, dst, filter); break;
 			case GREY_PIXEL : resizeImagePixel<GREY_PIXEL>(src, dst, filter); break;
 			case GREYA_PIXEL : resizeImagePixel<GREYA_PIXEL>(src, dst, filter); break;
+			case R16_PIXEL : resizeImagePixel<R16_PIXEL>(src, dst, filter); break;
+			case R16G16_PIXEL : resizeImagePixel<R16G16_PIXEL>(src, dst, filter); break;
+			case R16G16B16_PIXEL : resizeImagePixel<R16G16B16_PIXEL>(src, dst, filter); break;
+			case R16G16B16A16_PIXEL : resizeImagePixel<R16G16B16A16_PIXEL>(src, dst, filter); break;
 			default : assert(false);
 		}
 	}

@@ -67,4 +67,28 @@ describe('png_codec', function() {
 			assert(image.equalPixels(syncImage));
 		});
 	});
+	describe("deep pixels", function() {
+		it("stat 16 bit image", function(done) {
+			fs.readFile(path.join(__dirname, "test16.png"), function(err, buf) {
+				if (err) return done(err);
+				var stat = picha.statPng(buf);
+				assert.notEqual(stat, null);
+				assert.equal(stat.width, 50);
+				assert.equal(stat.height, 50);
+				assert.equal(stat.pixel, 'r16g16b16');
+				done(err);
+			});
+		});
+		it("decode 16 bit image", function(done) {
+			fs.readFile(path.join(__dirname, "test16.png"), function(err, buf) {
+				if (err) return done(err);
+				var img = picha.decodeSync(buf, { deep: true });
+				assert.notEqual(img, null);
+				assert.equal(img.width, 50);
+				assert.equal(img.height, 50);
+				assert.equal(img.pixel, 'r16g16b16');
+				done(err);
+			});
+		});
+	});
 });

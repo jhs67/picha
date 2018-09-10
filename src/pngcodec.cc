@@ -58,16 +58,30 @@ namespace picha {
 
 		int height() { return png_get_image_height(png_ptr, info_ptr); }
 
-		PixelMode pixel() {
+		PixelMode pixel(PixelMode req, bool deep) {
 			png_byte color = png_get_color_type(png_ptr, info_ptr);
-			if ((color & (PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE)) && (color & PNG_COLOR_MASK_ALPHA))
-				return RGBA_PIXEL;
-			else if ((color & (PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE)))
-				return RGB_PIXEL;
-			else if ((color & PNG_COLOR_MASK_ALPHA))
-				return GREYA_PIXEL;
-			else
-				return GREY_PIXEL;
+			deep = deep && png_get_bit_depth(png_ptr, info_ptr) == 16;
+			if (req == INVALID_PIXEL) {
+				if ((color & (PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE)) && (color & PNG_COLOR_MASK_ALPHA))
+					return deep ? R16G16B16A16_PIXEL : RGBA_PIXEL;
+				else if ((color & (PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE)))
+					return deep ? R16G16B16_PIXEL : RGB_PIXEL;
+				else if ((color & PNG_COLOR_MASK_ALPHA))
+					return deep ? R16G16_PIXEL : GREYA_PIXEL;
+				else
+					return deep ? R16_PIXEL : GREY_PIXEL;
+			}
+			else {
+				if (png_get_bit_depth(png_ptr, info_ptr) != 16) {
+					switch (req) {
+						case R16_PIXEL: return GREY_PIXEL;
+						case R16G16_PIXEL: return GREYA_PIXEL;
+						case R16G16B16_PIXEL: return RGB_PIXEL;
+						case R16G16B16A16_PIXEL: return RGBA_PIXEL;
+					}
+				}
+				return req;
+			}
 		}
 
 		static void onError(png_structp png_ptr, png_const_charp error) {
@@ -120,32 +134,38 @@ namespace picha {
 			return;
 		}
 
-		if (dst.pixel == RGB_PIXEL) {
+		if (pixelChannels(dst.pixel) == 3) {
 			png_set_gray_to_rgb(png_ptr);
 			png_set_palette_to_rgb(png_ptr);
 			png_set_expand(png_ptr);
 			png_set_strip_alpha(png_ptr);
 		}
-		else if (dst.pixel == RGBA_PIXEL) {
+		else if (pixelChannels(dst.pixel) == 4) {
 			png_set_gray_to_rgb(png_ptr);
 			png_set_palette_to_rgb(png_ptr);
 			png_set_expand(png_ptr);
 			png_set_tRNS_to_alpha(png_ptr);
 			png_set_add_alpha(png_ptr, ~0, PNG_FILLER_AFTER);
 		}
-		else if (dst.pixel == GREY_PIXEL) {
+		else if (pixelChannels(dst.pixel) == 1) {
 			png_set_strip_alpha(png_ptr);
 			png_set_rgb_to_gray(png_ptr, 1, -1, -1);
 			png_set_expand_gray_1_2_4_to_8(png_ptr);
 		}
-		else if (dst.pixel == GREYA_PIXEL) {
+		else if (pixelChannels(dst.pixel) == 2) {
 			png_set_rgb_to_gray(png_ptr, 1, -1.0, -1.0);
-			png_set_expand_gray_1_2_4_to_8(png_ptr);
 			png_set_tRNS_to_alpha(png_ptr);
 			png_set_add_alpha(png_ptr, ~0, PNG_FILLER_AFTER);
+			png_set_expand_gray_1_2_4_to_8(png_ptr);
 		}
 
-		png_set_strip_16(png_ptr);
+		if (dst.pixel == R16_PIXEL || dst.pixel == R16G16_PIXEL || dst.pixel == R16G16B16_PIXEL || dst.pixel == R16G16B16A16_PIXEL) {
+			png_set_swap(png_ptr);
+		}
+		else {
+			png_set_strip_16(png_ptr);
+		}
+
 		png_read_update_info(png_ptr, info_ptr);
 
 		rows = new png_bytep[dst.height];
@@ -208,8 +228,7 @@ namespace picha {
 			return;
 		}
 
-		if (pixel == INVALID_PIXEL)
-			pixel = ctx->reader.pixel();
+		pixel = ctx->reader.pixel(pixel, opts->Get(Nan::New(deep_symbol))->BooleanValue());
 
 		Local<Object> jsdst = newJsImage(ctx->reader.width(), ctx->reader.height(), pixel);
 		ctx->dstimage.Reset(jsdst);
@@ -247,8 +266,7 @@ namespace picha {
 			return;
 		}
 
-		if (pixel == INVALID_PIXEL)
-			pixel = reader.pixel();
+		pixel = reader.pixel(pixel, opts->Get(Nan::New(deep_symbol))->BooleanValue());
 
 		Local<Object> jsdst = newJsImage(reader.width(), reader.height(), pixel);
 
@@ -277,7 +295,7 @@ namespace picha {
 		Local<Object> stat = Nan::New<Object>();
 		stat->Set(Nan::New(width_symbol), Nan::New<Integer>(reader.width()));
 		stat->Set(Nan::New(height_symbol), Nan::New<Integer>(reader.height()));
-		stat->Set(Nan::New(pixel_symbol), pixelEnumToSymbol(reader.pixel()));
+		stat->Set(Nan::New(pixel_symbol), pixelEnumToSymbol(reader.pixel(INVALID_PIXEL, true)));
 		info.GetReturnValue().Set(stat);
 	}
 
@@ -313,10 +331,11 @@ namespace picha {
 	};
 
 	int pixelToPngMode(PixelMode p) {
-		static const int pngmode[] = { PNG_COLOR_TYPE_RGB, PNG_COLOR_TYPE_RGB_ALPHA,
-		PNG_COLOR_TYPE_GRAY, PNG_COLOR_TYPE_GRAY_ALPHA };
-		assert(p >= 0 && p < int(sizeof(pngmode) / sizeof(pngmode[0])));
-		return pngmode[p];
+		static const int pngmode[] = { PNG_COLOR_TYPE_GRAY, PNG_COLOR_TYPE_GRAY_ALPHA,
+			PNG_COLOR_TYPE_RGB, PNG_COLOR_TYPE_RGB_ALPHA };
+		int c = pixelChannels(p) - 1;
+		assert(c >= 0 && c < int(sizeof(pngmode) / sizeof(pngmode[0])));
+		return pngmode[c];
 	}
 
 	void pngWrite(png_structp png_ptr, png_bytep data, png_size_t length) {
@@ -351,12 +370,14 @@ namespace picha {
 
 		png_set_write_fn(png_ptr, writebuf, pngWrite, pngFlush);
 
-		png_set_IHDR(png_ptr, info_ptr, image.width, image.height, 8, pixelToPngMode(image.pixel),
+		int bits = pixelBytes(image.pixel) / pixelChannels(image.pixel) * 8;
+		png_set_IHDR(png_ptr, info_ptr, image.width, image.height, bits, pixelToPngMode(image.pixel),
 			PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 		png_write_info(png_ptr, info_ptr);
+		png_set_swap(png_ptr);
 
 		for (int y = 0; y < image.height; ++y)
-			png_write_row(png_ptr, reinterpret_cast<png_bytep>(image.data + image.stride * y));
+			png_write_row(png_ptr, reinterpret_cast<png_bytep>(image.row(y)));
 
 		png_write_end(png_ptr, info_ptr);
 
@@ -476,7 +497,8 @@ namespace picha {
 	}
 
 	std::vector<PixelMode> getPngEncodes() {
-		return std::vector<PixelMode>({ RGB_PIXEL, RGBA_PIXEL, GREY_PIXEL, GREYA_PIXEL });
+		return std::vector<PixelMode>({ RGB_PIXEL, RGBA_PIXEL, GREY_PIXEL, GREYA_PIXEL,
+			R16_PIXEL, R16G16_PIXEL, R16G16B16_PIXEL, R16G16B16A16_PIXEL, });
 	}
 
 }
