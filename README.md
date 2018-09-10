@@ -77,8 +77,8 @@ Return the average channel by channel difference between this and another image 
 The set of codec's available is determined at install time based on the availability of the
 corresponding native libraries. This is a map of the codec's available. The keys will be a
 sub-set of the supported codec's `[image/png, image/jpeg, image/tiff, image/webp]`. The values
-will be objects with members `[stat, decode, decodeSync, encode, encodeSync]` referring to
-the corresponding codec functions.
+will be objects with members `[stat, decode, decodeSync, encode, encodeSync, encodes]` referring to
+the corresponding codec functions. `encodes` is an array of the pixel formats which can be encoded.
 
 ### `picha.stat(buf)`
 Decode the image header and grab the image vitals. For most formats (not tiff) only the first

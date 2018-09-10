@@ -10,6 +10,7 @@ namespace picha {
 	NAN_METHOD(decodeJpegSync);
 	NAN_METHOD(encodeJpeg);
 	NAN_METHOD(encodeJpegSync);
+	std::vector<PixelMode> getJpegEncodes();
 
 }
 

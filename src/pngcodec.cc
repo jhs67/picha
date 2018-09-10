@@ -475,4 +475,8 @@ namespace picha {
 		info.GetReturnValue().Set(r);
 	}
 
+	std::vector<PixelMode> getPngEncodes() {
+		return std::vector<PixelMode>({ RGB_PIXEL, RGBA_PIXEL, GREY_PIXEL, GREYA_PIXEL });
+	}
+
 }

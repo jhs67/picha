@@ -10,6 +10,7 @@ namespace picha {
 	NAN_METHOD(decodeWebPSync);
 	NAN_METHOD(encodeWebP);
 	NAN_METHOD(encodeWebPSync);
+	std::vector<PixelMode> getWebpEncodes();
 
 }
 

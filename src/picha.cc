@@ -49,6 +49,14 @@ namespace picha {
 		return INVALID_PIXEL;
 	}
 
+	Handle<Value> pixelMap(std::vector<PixelMode> modes) {
+		Local<Array> r = Nan::New<Array>();
+		for (size_t i = 0; i < modes.size(); ++i) {
+			Nan::Set(r, i, pixelEnumToSymbol(modes[i]));
+		}
+		return r;
+	}
+
 	NativeImage jsImageToNativeImage(Local<Object>& img) {
 		NativeImage r;
 
@@ -156,6 +164,7 @@ namespace picha {
 		Nan::HandleScope scope;
 
 		v8::Local<v8::Object> catalog = Nan::New<v8::Object>();
+		v8::Local<v8::Value> encodes;
 		v8::Local<v8::Function> fn;
 		v8::Local<v8::Object> obj;
 
@@ -181,6 +190,9 @@ namespace picha {
 		obj->Set(Nan::New(encode_symbol), fn);
 		fn = SetPichaMethod(target, "encodeJpegSync", encodeJpegSync);
 		obj->Set(Nan::New(encodeSync_symbol), fn);
+		encodes = pixelMap(getJpegEncodes());
+		obj->Set(Nan::New(encodes_symbol), encodes);
+
 
 		Nan::Set(catalog, Nan::New("image/jpeg").ToLocalChecked(), obj);
 
@@ -200,6 +212,8 @@ namespace picha {
 		obj->Set(Nan::New(encode_symbol), fn);
 		fn = SetPichaMethod(target, "encodePngSync", encodePngSync);
 		obj->Set(Nan::New(encodeSync_symbol), fn);
+		encodes = pixelMap(getPngEncodes());
+		obj->Set(Nan::New(encodes_symbol), encodes);
 
 		Nan::Set(catalog, Nan::New("image/png").ToLocalChecked(), obj);
 
@@ -219,6 +233,8 @@ namespace picha {
 		obj->Set(Nan::New(encode_symbol), fn);
 		fn = SetPichaMethod(target, "encodeTiffSync", encodeTiffSync);
 		obj->Set(Nan::New(encodeSync_symbol), fn);
+		encodes = pixelMap(getTiffEncodes());
+		obj->Set(Nan::New(encodes_symbol), encodes);
 
 		Nan::Set(catalog, Nan::New("image/tiff").ToLocalChecked(), obj);
 
@@ -238,6 +254,8 @@ namespace picha {
 		obj->Set(Nan::New(encode_symbol), fn);
 		fn = SetPichaMethod(target, "encodeWebPSync", encodeWebPSync);
 		obj->Set(Nan::New(encodeSync_symbol), fn);
+		encodes = pixelMap(getWebpEncodes());
+		obj->Set(Nan::New(encodes_symbol), encodes);
 
 		Nan::Set(catalog, Nan::New("image/webp").ToLocalChecked(), obj);
 

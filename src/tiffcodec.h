@@ -10,6 +10,7 @@ namespace picha {
 	NAN_METHOD(decodeTiffSync);
 	NAN_METHOD(encodeTiff);
 	NAN_METHOD(encodeTiffSync);
+	std::vector<PixelMode> getTiffEncodes();
 
 }
 

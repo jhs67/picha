@@ -41,6 +41,7 @@ namespace picha {
 	SSYMBOL(encodeSync)\
 	SSYMBOL(encode)\
 	SSYMBOL(stat)\
+	SSYMBOL(encodes)\
 	SSYMBOL(index)\
 	SSYMBOL(compression)\
 	SSYMBOL(lzw)\

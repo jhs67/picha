@@ -8,7 +8,6 @@
 #include <node_buffer.h>
 
 #include "webpcodec.h"
-#include "colorconvert.h"
 
 namespace picha {
 
@@ -205,20 +204,6 @@ namespace picha {
 					ok = WebPPictureImportRGB(&picture, (const uint8_t*)image.data, image.stride);
 					break;
 				}
-				case GREYA_PIXEL: {
-					NativeImage rgba = picha::newNativeImage(image.width, image.height, RGBA_PIXEL);
-					doColorConvert(ColorSettings(), image, rgba);
-					ok = WebPPictureImportRGBA(&picture, (const uint8_t*)rgba.data, rgba.stride);
-					freeNativeImage(rgba);
-					break;
-				}
-				case GREY_PIXEL: {
-					NativeImage rgb = newNativeImage(image.width, image.height, RGB_PIXEL);
-					doColorConvert(ColorSettings(), image, rgb);
-					ok = WebPPictureImportRGB(&picture, (const uint8_t*)rgb.data, rgb.stride);
-					freeNativeImage(rgb);
-					break;
-				}
 			}
 
 			if (!ok) WebPPictureFree(&picture);
@@ -392,6 +377,10 @@ namespace picha {
 			r = Nan::Undefined();
 		}
 		info.GetReturnValue().Set(r);
+	}
+
+	std::vector<PixelMode> getWebpEncodes() {
+		return std::vector<PixelMode>({ RGB_PIXEL, RGBA_PIXEL });
 	}
 
 }

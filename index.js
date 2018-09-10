@@ -34,9 +34,49 @@ var colorConvertSync = exports.colorConvertSync = function(img, opt) {
 
 //--
 
+var supportedMap = {
+	'rgb': [ 'rgba', 'r16g16b16', 'r16g16b16a16', 'grey', 'greya', 'r16' ],
+	'rgba': [ 'r16g16b16a16', 'rgb', 'r16g16b16', 'greya', 'r16g16', 'grey' ],
+	'grey': [ 'greya', 'r16', 'rgb', 'rgba', 'r16g16', 'r16g16b16' ],
+	'greya': [  'r16g16', 'rgba', 'r16g16b16a16', 'grey', 'r16', 'rgb' ],
+	'r16': [ 'r16g16', 'r16g16b16', 'r16g16b16a16', 'grey', 'greya', 'rgb' ],
+	'r16g16': [ 'r16g16b16', 'r16g16b16a16', 'greya', 'r16', 'grey', 'rgb' ],
+	'r16g16b16': [ 'r16g16b16a16', 'rgb', 'rgba', 'grey', 'greya', 'r16' ],
+	'r16g16b16a16': [ 'rgba', 'r16g16b16', 'rgb', 'greya', 'r16g16', 'r16' ],
+};
+
+function isSupported(pixel, encodes) {
+	return encodes.indexOf(pixel != -1);
+}
+
+function chooseSupported(pixel, encodes) {
+	var map = supportedMap[pixel];
+	if (!map) throw new Error("invalid pixel format: ", pixel);
+	for (var i = 0; i < map.length; ++i) {
+		if (isSupported(map[i], encodes))
+			return map[i];
+	}
+	return encodes[0];
+}
+
+function toSupported(image, encodes, next) {
+	if (isSupported(image.pixel, encodes))
+		return next(null, image);
+	return colorConvert(image, { pixel: chooseSupported(image.pixel, encodes) }, next);
+}
+
+function toSupportedSync(image, encodes) {
+	if (isSupported(image.pixel, encodes))
+		return image;
+	return colorConvertSync(image, { pixel: chooseSupported(image.pixel, encodes) });
+}
+
+//--
+
 if (catalog['image/png']) {
 
 	var statPng = exports.statPng = picha.statPng;
+	var pngEncodes = exports.pngEncodes = catalog['image/png'].encodes;
 
 	var decodePng = exports.decodePng = function(buf, opt, cb) {
 		if (typeof opt === 'function') { cb = opt; opt = {}; }
@@ -51,11 +91,14 @@ if (catalog['image/png']) {
 
 	var encodePng = exports.encodePng = function(img, opt, cb) {
 		if (typeof opt === 'function') { cb = opt; opt = {}; }
-		picha.encodePng(img, opt, cb);
+		toSupported(img, pngEncodes, function(err, img) {
+			if (err) return cb(err);
+			picha.encodePng(img, opt, cb);
+		});
 	};
 
 	var encodePngSync = exports.encodePngSync = function(img, opt) {
-		return picha.encodePngSync(img, opt || {});
+		return picha.encodePngSync(toSupportedSync(img, pngEncodes), opt || {});
 	};
 }
 
@@ -64,6 +107,7 @@ if (catalog['image/png']) {
 if (catalog['image/jpeg']) {
 
 	var statJpeg = exports.statJpeg = picha.statJpeg;
+	var jpegEncodes = exports.jpegEncodes = catalog['image/jpeg'].encodes;
 
 	var decodeJpeg = exports.decodeJpeg = function(buf, opt, cb) {
 		if (typeof opt === 'function') { cb = opt; opt = {}; }
@@ -78,11 +122,14 @@ if (catalog['image/jpeg']) {
 
 	var encodeJpeg = exports.encodeJpeg = function(img, opt, cb) {
 		if (typeof opt === 'function') { cb = opt; opt = {}; }
-		picha.encodeJpeg(img, opt, cb);
+		toSupported(img, jpegEncodes, function(err, img) {
+			if (err) return cb(err);
+			picha.encodeJpeg(img, opt, cb);
+		});
 	};
 
 	var encodeJpegSync = exports.encodeJpegSync = function(img, opt) {
-		return picha.encodeJpegSync(img, opt || {});
+		return picha.encodeJpegSync(toSupportedSync(img, jpegEncodes), opt || {});
 	};
 }
 
@@ -91,6 +138,7 @@ if (catalog['image/jpeg']) {
 if (catalog['image/tiff']) {
 
 	var statTiff = exports.statTiff = picha.statTiff;
+	var tiffEncodes = exports.tiffEncodes = catalog['image/tiff'].encodes;
 
 	var decodeTiff = exports.decodeTiff = function(buf, opt, cb) {
 		if (typeof opt === 'function') { cb = opt; opt = {}; }
@@ -105,11 +153,14 @@ if (catalog['image/tiff']) {
 
 	var encodeTiff = exports.encodeTiff = function(img, opt, cb) {
 		if (typeof opt === 'function') { cb = opt; opt = {}; }
-		picha.encodeTiff(img, opt, cb);
+		toSupported(img, tiffEncodes, function(err, img) {
+			if (err) return cb(err);
+			picha.encodeTiff(img, opt, cb);
+		});
 	};
 
 	var encodeTiffSync = exports.encodeTiffSync = function(img, opt) {
-		return picha.encodeTiffSync(img, opt || {});
+		return picha.encodeTiffSync(toSupportedSync(img, tiffEncodes), opt || {});
 	};
 }
 
@@ -118,6 +169,7 @@ if (catalog['image/tiff']) {
 if (catalog['image/webp']) {
 
 	var statWebP = exports.statWebP = picha.statWebP;
+	var webpEncodes = exports.webpEncodes = catalog['image/webp'].encodes;
 
 	var decodeWebP = exports.decodeWebP = function(buf, opt, cb) {
 		if (typeof opt === 'function') { cb = opt; opt = {}; }
@@ -132,11 +184,14 @@ if (catalog['image/webp']) {
 
 	var encodeWebP = exports.encodeWebP = function(img, opt, cb) {
 		if (typeof opt === 'function') { cb = opt; opt = {}; }
-		picha.encodeWebP(img, opt, cb);
+		toSupported(img, webpEncodes, function(err, img) {
+			if (err) return cb(err);
+			picha.encodeWebP(img, opt, cb);
+		});
 	};
 
 	var encodeWebPSync = exports.encodeWebPSync = function(img, opt) {
-		return picha.encodeWebPSync(img, opt || {});
+		return picha.encodeWebPSync(toSupportedSync(img, webpEncodes), opt || {});
 	};
 }
 

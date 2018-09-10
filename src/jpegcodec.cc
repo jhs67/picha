@@ -256,7 +256,7 @@ namespace picha {
 	//--
 
 	struct JpegEncodeCtx {
-		JpegEncodeCtx() : error(0), dstdata_(0) {}
+		JpegEncodeCtx() : error(0), dstdata(0) {}
 
 		char *error;
 		jmp_buf jmpbuf;
@@ -266,7 +266,7 @@ namespace picha {
 
 		NativeImage image;
 
-		PixelType *dstdata_;
+		uint8_t *dstdata;
 		size_t dstlen;
 		float quality;
 
@@ -333,7 +333,7 @@ namespace picha {
 
 		cinfo.dest = &jdst;
 
-		if (image.pixel == GREY_PIXEL || image.pixel == GREYA_PIXEL) {
+		if (image.pixel == GREY_PIXEL) {
 	        cinfo.input_components = 1;
 	        cinfo.in_color_space = JCS_GRAYSCALE;
 		}
@@ -348,37 +348,15 @@ namespace picha {
         jpeg_set_quality(&cinfo, quality, true);
         jpeg_start_compress(&cinfo, true);
 
-		if (image.pixel == RGBA_PIXEL) {
-			unsigned char * buf = new unsigned char[image.width * 3];
-			for (int y = 0; y < image.height; ++y) {
-				PixelType * p = image.row(y), *q = buf;
-				for (int x = 0; x < image.width; x += 1, p += 4, q += 3)
-					q[0] = p[0], q[1] = p[1], q[2] = p[2];
-				jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(&buf), 1);
-			}
-			delete[] buf;
-		}
-		else if (image.pixel == GREYA_PIXEL) {
-			unsigned char * buf = new unsigned char[image.width];
-			for (int y = 0; y < image.height; ++y) {
-				PixelType * p = image.row(y), *q = buf;
-				for (int x = 0; x < image.width; x += 1, p += 2, q += 1)
-					q[0] = p[0];
-				jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(&buf), 1);
-			}
-			delete[] buf;
-		}
-		else {
-			for (int y = 0; y < image.height; ++y) {
-				PixelType * p = image.row(y);
-				jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(&p), 1);
-			}
+		for (int y = 0; y < image.height; ++y) {
+			PixelType * p = image.row(y);
+			jpeg_write_scanlines(&cinfo, (JSAMPARRAY)(&p), 1);
 		}
 
         jpeg_finish_compress(&cinfo);
 		jpeg_destroy_compress(&cinfo);
 
-		dstdata_ = reinterpret_cast<PixelType*>(jdst.buf);
+		dstdata = reinterpret_cast<uint8_t*>(jdst.buf);
 		dstlen = jdst.size;
 	}
 
@@ -393,7 +371,7 @@ namespace picha {
 
 		char * error = ctx->error;
 		size_t dstlen = ctx->dstlen;
-		PixelType * dstdata_ = ctx->dstdata_;
+		PixelType * dstdata = ctx->dstdata;
 		Local<Function> cb = Nan::New(ctx->cb);
 		ctx->buffer.Reset();
 		ctx->cb.Reset();
@@ -408,8 +386,8 @@ namespace picha {
 		else {
 			Local<Object> o;
 			e = Nan::Undefined();
-			if (Nan::NewBuffer(reinterpret_cast<char*>(dstdata_), dstlen).ToLocal(&o)) {
-				dstdata_ = 0;
+			if (Nan::NewBuffer(reinterpret_cast<char*>(dstdata), dstlen).ToLocal(&o)) {
+				dstdata = 0;
 				r = o;
 			}
 			else {
@@ -418,8 +396,8 @@ namespace picha {
 		}
 
 		free(error);
-		if (dstdata_)
-			free(dstdata_);
+		if (dstdata)
+			free(dstdata);
 
 		Nan::TryCatch try_catch;
 
@@ -500,18 +478,22 @@ namespace picha {
 		}
 		else {
 			Local<Object> o;
-			if (Nan::NewBuffer(reinterpret_cast<char*>(ctx.dstdata_), ctx.dstlen).ToLocal(&o)) {
+			if (Nan::NewBuffer(reinterpret_cast<char*>(ctx.dstdata), ctx.dstlen).ToLocal(&o)) {
 				r = o;
-				ctx.dstdata_ = 0;
+				ctx.dstdata = 0;
 			}
 			else {
 				r = Nan::Undefined();
 			}
 		}
 
-		if (ctx.dstdata_)
-			free(ctx.dstdata_);
+		if (ctx.dstdata)
+			free(ctx.dstdata);
 		info.GetReturnValue().Set(r);
+	}
+
+	std::vector<PixelMode> getJpegEncodes() {
+		return std::vector<PixelMode>({ RGB_PIXEL, GREY_PIXEL });
 	}
 
 }
