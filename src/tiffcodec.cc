@@ -175,8 +175,12 @@ namespace picha {
 			Nan::ThrowError("expected: decodeTiff(srcbuffer, opts, cb)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		char* srcdata = Buffer::Data(srcbuf);
@@ -185,7 +189,7 @@ namespace picha {
 		int idx = 0;
 		Local<Value> jidx = opts->Get(Nan::New(index_symbol));
 		if (jidx->IsNumber())
-			idx = jidx->Uint32Value();
+			idx = jidx->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
 
 		TiffDecodeCtx * ctx = new TiffDecodeCtx;
 		ctx->reader.open(srcdata, srclen, idx);
@@ -211,8 +215,12 @@ namespace picha {
 			Nan::ThrowError("expected: decodeTiffSync(srcbuffer, opts)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 
 		char* srcdata = Buffer::Data(srcbuf);
 		size_t srclen = Buffer::Length(srcbuf);
@@ -220,7 +228,7 @@ namespace picha {
 		int idx = 0;
 		Local<Value> jidx = opts->Get(Nan::New(index_symbol));
 		if (jidx->IsNumber())
-			idx = jidx->Uint32Value();
+			idx = jidx->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
 
 		TiffReader reader;
 		reader.open(srcdata, srclen, idx);
@@ -247,7 +255,10 @@ namespace picha {
 			Nan::ThrowError("expected: statTiff(srcbuffer)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
 
 		TiffReader reader;
 		reader.open(Buffer::Data(srcbuf), Buffer::Length(srcbuf), 0);
@@ -424,8 +435,12 @@ namespace picha {
 			Nan::ThrowError("expected: encodeTiff(image, opts, cb)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		int comp = COMPRESSION_LZW;
@@ -456,8 +471,12 @@ namespace picha {
 			Nan::ThrowError("expected: encodeTiffSync(image, opts)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 
 		int comp = COMPRESSION_LZW;
 		if (opts->Has(Nan::New(compression_symbol)) && !getTiffCompression(opts->Get(Nan::New(compression_symbol)), comp)) {

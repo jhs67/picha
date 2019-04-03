@@ -161,7 +161,10 @@ namespace picha {
 			Nan::ThrowError("expected: decodeJpeg(srcbuffer, opts, cb)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		char* srcdata = Buffer::Data(srcbuf);
@@ -198,7 +201,10 @@ namespace picha {
 			Nan::ThrowError("expected: decodeJpegSync(srcbuffer, opts)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
 
 		char* srcdata = Buffer::Data(srcbuf);
 		size_t srclen = Buffer::Length(srcbuf);
@@ -233,7 +239,10 @@ namespace picha {
 			Nan::ThrowError("expected: statJpeg(srcbuffer)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
 
 		JpegReader reader;
 		reader.open(Buffer::Data(srcbuf), Buffer::Length(srcbuf));
@@ -414,12 +423,16 @@ namespace picha {
 			Nan::ThrowError("expected: encodeJpeg(image, opts, cb)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		Local<Value> v = opts->Get(Nan::New(quality_symbol));
-		double quality = v->NumberValue();
+		double quality = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 		if (quality != quality)
 			quality = 85;
 		else if (quality < 0)
@@ -449,11 +462,15 @@ namespace picha {
 			Nan::ThrowError("expected: encodeJpegSync(image, opts)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 
 		Local<Value> v = opts->Get(Nan::New(quality_symbol));
-		double quality = v->NumberValue();
+		double quality = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 		if (quality != quality)
 			quality = 85;
 		else if (quality < 0)

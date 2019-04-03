@@ -7,13 +7,13 @@ namespace picha {
 		double d;
 		Local<Value> v;
 		v = opts->Get(Nan::New(redWeight_symbol));
-		d = v->NumberValue();
+		d = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 		if (d == d) s.rFactor = d;
 		v = opts->Get(Nan::New(greenWeight_symbol));
-		d = v->NumberValue();
+		d = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 		if (d == d) s.gFactor = d;
 		v = opts->Get(Nan::New(blueWeight_symbol));
-		d = v->NumberValue();
+		d = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 		if (d == d) s.bFactor = d;
 		float n = 1.0f / (s.rFactor + s.gFactor + s.bFactor);
 		s.rFactor *= n;
@@ -217,8 +217,12 @@ namespace picha {
 			Nan::ThrowError("expected: colorConvert(image, opts, cb)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		NativeImage src;
@@ -255,8 +259,12 @@ namespace picha {
 			Nan::ThrowError("expected: colorConvertSync(image, opts)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 
 		NativeImage src;
 		src = jsImageToNativeImage(img);

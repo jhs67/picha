@@ -61,14 +61,17 @@ namespace picha {
 	NativeImage jsImageToNativeImage(Local<Object>& img) {
 		NativeImage r;
 
-		r.width = img->Get(Nan::New(width_symbol))->Uint32Value();
-		r.height = img->Get(Nan::New(height_symbol))->Uint32Value();
-		r.stride = img->Get(Nan::New(stride_symbol))->Uint32Value();
+		r.width = img->Get(Nan::New(width_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		r.height = img->Get(Nan::New(height_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		r.stride = img->Get(Nan::New(stride_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
 		r.pixel = pixelSymbolToEnum(img->Get(Nan::New(pixel_symbol)));
 		if (r.pixel < NUM_PIXELS && r.pixel > INVALID_PIXEL) {
 			Local<Value> data = img->Get(Nan::New(data_symbol));
 			if (Buffer::HasInstance(data)) {
-				Local<Object> databuf = data->ToObject();
+				MaybeLocal<Object> mdatabuf = data->ToObject(Nan::GetCurrentContext());
+				if (mdatabuf.IsEmpty())
+					return r;
+				Local<Object> databuf = mdatabuf.ToLocalChecked();
 				size_t len = Buffer::Length(databuf);
 				size_t rw = pixelBytes(r.pixel) * r.width;
 				if (len >= r.height * size_t(r.stride) - r.stride + rw && r.height != 0) {

@@ -51,7 +51,10 @@ namespace picha {
 			Nan::ThrowError("expected: decodeWebP(srcbuffer, opts, cb)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		char* srcdata = Buffer::Data(srcbuf);
@@ -82,7 +85,10 @@ namespace picha {
 			Nan::ThrowError("expected: decodeWebPSync(srcbuffer, opts)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
 
 		char* srcdata = Buffer::Data(srcbuf);
 		size_t srclen = Buffer::Length(srcbuf);
@@ -115,7 +121,10 @@ namespace picha {
 			Nan::ThrowError("expected: statWebP(srcbuffer)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
 
 		WebPBitstreamFeatures feat;
 		if (WebPGetFeatures((const uint8_t*)Buffer::Data(srcbuf), Buffer::Length(srcbuf), &feat))
@@ -133,7 +142,7 @@ namespace picha {
 	namespace {
 
 		double getQuality(Handle<Value> v, double def) {
-			double quality = v->NumberValue();
+			double quality = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 			if (quality != quality)
 				quality = def;
 			else if (quality < 0)
@@ -180,7 +189,7 @@ namespace picha {
 				config.alpha_quality = getQuality(opts->Get(Nan::New(alphaQuality_symbol)), 100);
 
 			if (r && opts->Has(Nan::New(exact_symbol)))
-				config.exact = opts->Get(Nan::New(exact_symbol))->BooleanValue();
+				config.exact = opts->Get(Nan::New(exact_symbol))->BooleanValue(Nan::GetCurrentContext()).FromMaybe(false);
 
 			return r;
 		}
@@ -302,8 +311,12 @@ namespace picha {
 			Nan::ThrowError("expected: encodeWebP(image, opts, cb)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		WebPEncodeCtx *ctx = new WebPEncodeCtx();
@@ -332,8 +345,12 @@ namespace picha {
 			Nan::ThrowError("expected: encodeWebPSync(image, opts)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 
 		WebPConfig config;
 		if (!setupWebPConfig(config, opts)) {

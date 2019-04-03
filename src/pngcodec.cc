@@ -78,6 +78,7 @@ namespace picha {
 						case R16G16_PIXEL: return GREYA_PIXEL;
 						case R16G16B16_PIXEL: return RGB_PIXEL;
 						case R16G16B16A16_PIXEL: return RGBA_PIXEL;
+						default: break;
 					}
 				}
 				return req;
@@ -206,8 +207,12 @@ namespace picha {
 			Nan::ThrowError("expected: decodePng(srcbuffer, opts, cb)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		Local<Value> jpixel = opts->Get(Nan::New(pixel_symbol));
@@ -228,7 +233,7 @@ namespace picha {
 			return;
 		}
 
-		pixel = ctx->reader.pixel(pixel, opts->Get(Nan::New(deep_symbol))->BooleanValue());
+		pixel = ctx->reader.pixel(pixel, opts->Get(Nan::New(deep_symbol))->BooleanValue(Nan::GetCurrentContext()).FromMaybe(false));
 
 		Local<Object> jsdst = newJsImage(ctx->reader.width(), ctx->reader.height(), pixel);
 		ctx->dstimage.Reset(jsdst);
@@ -246,8 +251,12 @@ namespace picha {
 			Nan::ThrowError("expected: decodePngSync(srcbuffer, opts)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 
 		Local<Value> jpixel = opts->Get(Nan::New(pixel_symbol));
 		PixelMode pixel = pixelSymbolToEnum(jpixel);
@@ -266,7 +275,7 @@ namespace picha {
 			return;
 		}
 
-		pixel = reader.pixel(pixel, opts->Get(Nan::New(deep_symbol))->BooleanValue());
+		pixel = reader.pixel(pixel, opts->Get(Nan::New(deep_symbol))->BooleanValue(Nan::GetCurrentContext()).FromMaybe(false));
 
 		Local<Object> jsdst = newJsImage(reader.width(), reader.height(), pixel);
 
@@ -285,7 +294,10 @@ namespace picha {
 			Nan::ThrowError("expected: statPng(buffer)");
 			return;
 		}
-		Local<Object> srcbuf = info[0]->ToObject();
+		MaybeLocal<Object> msrcbuf = info[0]->ToObject(Nan::GetCurrentContext());
+		if (msrcbuf.IsEmpty())
+			return;
+		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
 
 		PngReader reader;
 		reader.open(Buffer::Data(srcbuf), Buffer::Length(srcbuf));
@@ -440,7 +452,10 @@ namespace picha {
 			Nan::ThrowError("expected: encodePng(image, opts, cb)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		PngEncodeCtx * ctx = new PngEncodeCtx;
@@ -464,7 +479,10 @@ namespace picha {
 			Nan::ThrowError("expected: encodePngSync(image, opts)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
 
 		PngEncodeCtx ctx;
 		ctx.image = jsImageToNativeImage(img);

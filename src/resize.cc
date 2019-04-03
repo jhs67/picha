@@ -177,7 +177,7 @@ namespace picha {
 	};
 
 	bool getResizeOptions(ResizeOptions& s, Handle<Object> opts) {
-		Local<Value> v = opts->Get(Nan::New(filter_symbol));
+		Local<Value> v = opts->Get(Nan::GetCurrentContext(), Nan::New(filter_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		if (!v->IsUndefined()) {
 			s.width = 1.0f;
 			s.filter = symbolToResizeFilter(opts->Get(Nan::New(filter_symbol)));
@@ -186,9 +186,9 @@ namespace picha {
 				return false;
 			}
 		}
-		v = opts->Get(Nan::New(filterScale_symbol));
+		v = opts->Get(Nan::GetCurrentContext(), Nan::New(filterScale_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		if (!v->IsUndefined()) {
-			s.width = v->NumberValue();
+			s.width = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 			if (s.width != s.width || s.width <= 0) {
 				Nan::ThrowError("invalid filter width");
 				return false;
@@ -323,8 +323,12 @@ namespace picha {
 			Nan::ThrowError("expected: resize(image, opts, cb)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		NativeImage src;
@@ -334,8 +338,8 @@ namespace picha {
 			return;
 		}
 
-		int width = opts->Get(Nan::New(width_symbol))->Uint32Value();
-		int height = opts->Get(Nan::New(height_symbol))->Uint32Value();
+		int width = opts->Get(Nan::New(width_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		int height = opts->Get(Nan::New(height_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
 		if (width <= 0 || height <= 0) {
 			Nan::ThrowError("invalid dimensions");
 			return;
@@ -365,8 +369,12 @@ namespace picha {
 			Nan::ThrowError("expected: resizeSync(image, opts)");
 			return;
 		}
-		Local<Object> img = info[0]->ToObject();
-		Local<Object> opts = info[1]->ToObject();
+		MaybeLocal<Object> mimg = info[0]->ToObject(Nan::GetCurrentContext());
+		MaybeLocal<Object> mopts = info[1]->ToObject(Nan::GetCurrentContext());
+		if (mimg.IsEmpty() || mopts.IsEmpty())
+			return;
+		Local<Object> img = mimg.ToLocalChecked();
+		Local<Object> opts = mopts.ToLocalChecked();
 
 		NativeImage src;
 		src = jsImageToNativeImage(img);
@@ -374,8 +382,8 @@ namespace picha {
 			Nan::ThrowError("invalid image");
 		}
 
-		int width = opts->Get(Nan::New(width_symbol))->Uint32Value();
-		int height = opts->Get(Nan::New(height_symbol))->Uint32Value();
+		int width = opts->Get(Nan::New(width_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		int height = opts->Get(Nan::New(height_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
 		if (width <= 0 || height <= 0) {
 			Nan::ThrowError("invalid dimensions");
 		}
