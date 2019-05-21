@@ -1,6 +1,6 @@
 {
   "name": "picha",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "description": "image format codec and simple image processing",
   "main": "index.js",
   "scripts": {
