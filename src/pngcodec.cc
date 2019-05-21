@@ -215,7 +215,7 @@ namespace picha {
 		Local<Object> opts = mopts.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
-		Local<Value> jpixel = opts->Get(Nan::New(pixel_symbol));
+		Local<Value> jpixel = Nan::Get(opts, Nan::New(pixel_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		PixelMode pixel = pixelSymbolToEnum(jpixel);
 		if (!jpixel->IsUndefined() && pixel == INVALID_PIXEL) {
 			Nan::ThrowError("invalid pixel mode");
@@ -233,7 +233,7 @@ namespace picha {
 			return;
 		}
 
-		pixel = ctx->reader.pixel(pixel, opts->Get(Nan::New(deep_symbol))->BooleanValue(Nan::GetCurrentContext()).FromMaybe(false));
+		pixel = ctx->reader.pixel(pixel, Nan::Get(opts, Nan::New(deep_symbol)).FromMaybe(Local<Value>(Nan::Undefined()))->ToBoolean(v8::Isolate::GetCurrent())->Value());
 
 		Local<Object> jsdst = newJsImage(ctx->reader.width(), ctx->reader.height(), pixel);
 		ctx->dstimage.Reset(jsdst);
@@ -258,7 +258,7 @@ namespace picha {
 		Local<Object> srcbuf = msrcbuf.ToLocalChecked();
 		Local<Object> opts = mopts.ToLocalChecked();
 
-		Local<Value> jpixel = opts->Get(Nan::New(pixel_symbol));
+		Local<Value> jpixel = Nan::Get(opts, Nan::New(pixel_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		PixelMode pixel = pixelSymbolToEnum(jpixel);
 		if (!jpixel->IsUndefined() && pixel == INVALID_PIXEL) {
 			Nan::ThrowError("invalid pixel mode");
@@ -275,7 +275,7 @@ namespace picha {
 			return;
 		}
 
-		pixel = reader.pixel(pixel, opts->Get(Nan::New(deep_symbol))->BooleanValue(Nan::GetCurrentContext()).FromMaybe(false));
+		pixel = reader.pixel(pixel, Nan::Get(opts, Nan::New(deep_symbol)).FromMaybe(Local<Value>(Nan::Undefined()))->ToBoolean(v8::Isolate::GetCurrent())->Value());
 
 		Local<Object> jsdst = newJsImage(reader.width(), reader.height(), pixel);
 
@@ -305,9 +305,9 @@ namespace picha {
 			return;
 
 		Local<Object> stat = Nan::New<Object>();
-		stat->Set(Nan::New(width_symbol), Nan::New<Integer>(reader.width()));
-		stat->Set(Nan::New(height_symbol), Nan::New<Integer>(reader.height()));
-		stat->Set(Nan::New(pixel_symbol), pixelEnumToSymbol(reader.pixel(INVALID_PIXEL, true)));
+		Nan::Set(stat, Nan::New(width_symbol), Nan::New<Integer>(reader.width()));
+		Nan::Set(stat, Nan::New(height_symbol), Nan::New<Integer>(reader.height()));
+		Nan::Set(stat, Nan::New(pixel_symbol), pixelEnumToSymbol(reader.pixel(INVALID_PIXEL, true)));
 		info.GetReturnValue().Set(stat);
 	}
 
@@ -466,7 +466,7 @@ namespace picha {
 			return;
 		}
 
-		ctx->buffer.Reset(img->Get(Nan::New(data_symbol)));
+		ctx->buffer.Reset(Nan::Get(img, Nan::New(data_symbol)).FromMaybe(Local<Value>(Nan::Undefined())));
 		ctx->cb.Reset(cb);
 
 		uv_work_t* work_req = new uv_work_t();

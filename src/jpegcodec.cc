@@ -254,9 +254,9 @@ namespace picha {
 			return;
 
 		Local<Object> stat = Nan::New<Object>();
-		stat->Set(Nan::New(width_symbol), Nan::New<Integer>(reader.width()));
-		stat->Set(Nan::New(height_symbol), Nan::New<Integer>(reader.height()));
-		stat->Set(Nan::New(pixel_symbol), pixelEnumToSymbol(pixel));
+		Nan::Set(stat, Nan::New(width_symbol), Nan::New<Integer>(reader.width()));
+		Nan::Set(stat, Nan::New(height_symbol), Nan::New<Integer>(reader.height()));
+		Nan::Set(stat, Nan::New(pixel_symbol), pixelEnumToSymbol(pixel));
 		info.GetReturnValue().Set(stat);
 	}
 
@@ -431,7 +431,7 @@ namespace picha {
 		Local<Object> opts = mopts.ToLocalChecked();
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
-		Local<Value> v = opts->Get(Nan::New(quality_symbol));
+		Local<Value> v = Nan::Get(opts, Nan::New(quality_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		double quality = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 		if (quality != quality)
 			quality = 85;
@@ -449,7 +449,7 @@ namespace picha {
 		}
 
 		ctx->quality = quality;
-		ctx->buffer.Reset(img->Get(Nan::New(data_symbol)));
+		ctx->buffer.Reset(Nan::Get(img, Nan::New(data_symbol)).FromMaybe(Local<Value>(Nan::Undefined())));
 		ctx->cb.Reset(cb);
 
 		uv_work_t* work_req = new uv_work_t();
@@ -469,7 +469,7 @@ namespace picha {
 		Local<Object> img = mimg.ToLocalChecked();
 		Local<Object> opts = mopts.ToLocalChecked();
 
-		Local<Value> v = opts->Get(Nan::New(quality_symbol));
+		Local<Value> v = Nan::Get(opts, Nan::New(quality_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		double quality = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 		if (quality != quality)
 			quality = 85;

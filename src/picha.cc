@@ -38,19 +38,19 @@ namespace picha {
 		&r16_symbol, &r16g16_symbol, &r16g16b16_symbol, &r16g16b16a16_symbol
 	};
 
-	Handle<Value> pixelEnumToSymbol(PixelMode t) {
+	Local<Value> pixelEnumToSymbol(PixelMode t) {
 		if (t < 0 || t >= NUM_PIXELS) return Nan::Undefined();
 		return Nan::New(*pixelSymbols[t]);
 	}
 
-	PixelMode pixelSymbolToEnum(Handle<Value> obj) {
+	PixelMode pixelSymbolToEnum(Local<Value> obj) {
 		for (int i = 0; i < NUM_PIXELS; ++i)
 			if (obj->StrictEquals(Nan::New(*pixelSymbols[i])))
 				return static_cast<PixelMode>(i);
 		return INVALID_PIXEL;
 	}
 
-	Handle<Value> pixelMap(std::vector<PixelMode> modes) {
+	Local<Value> pixelMap(std::vector<PixelMode> modes) {
 		Local<Array> r = Nan::New<Array>();
 		for (size_t i = 0; i < modes.size(); ++i) {
 			Nan::Set(r, i, pixelEnumToSymbol(modes[i]));
@@ -61,12 +61,13 @@ namespace picha {
 	NativeImage jsImageToNativeImage(Local<Object>& img) {
 		NativeImage r;
 
-		r.width = img->Get(Nan::New(width_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
-		r.height = img->Get(Nan::New(height_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
-		r.stride = img->Get(Nan::New(stride_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
-		r.pixel = pixelSymbolToEnum(img->Get(Nan::New(pixel_symbol)));
+		Local<Value> blah = Nan::Undefined();
+		r.width = Nan::Get(img, Nan::New(width_symbol)).FromMaybe(blah)->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		r.height = Nan::Get(img, Nan::New(height_symbol)).FromMaybe(blah)->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		r.stride = Nan::Get(img, Nan::New(stride_symbol)).FromMaybe(blah)->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		r.pixel = pixelSymbolToEnum(Nan::Get(img, Nan::New(pixel_symbol)).FromMaybe(blah));
 		if (r.pixel < NUM_PIXELS && r.pixel > INVALID_PIXEL) {
-			Local<Value> data = img->Get(Nan::New(data_symbol));
+			Local<Value> data = Nan::Get(img, Nan::New(data_symbol)).FromMaybe(blah);
 			if (Buffer::HasInstance(data)) {
 				MaybeLocal<Object> mdatabuf = data->ToObject(Nan::GetCurrentContext());
 				if (mdatabuf.IsEmpty())
@@ -100,16 +101,16 @@ namespace picha {
 
 	Local<Object> nativeImageToJsImage(NativeImage& cimage) {
 		Local<Object> image = Nan::New<Object>();
-		image->Set(Nan::New(width_symbol), Nan::New<Integer>(cimage.width));
-		image->Set(Nan::New(height_symbol), Nan::New<Integer>(cimage.height));
-		image->Set(Nan::New(stride_symbol), Nan::New<Integer>(cimage.stride));
-		image->Set(Nan::New(pixel_symbol), pixelEnumToSymbol(cimage.pixel));
+		Nan::Set(image, Nan::New(width_symbol), Nan::New<Integer>(cimage.width));
+		Nan::Set(image, Nan::New(height_symbol), Nan::New<Integer>(cimage.height));
+		Nan::Set(image, Nan::New(stride_symbol), Nan::New<Integer>(cimage.stride));
+		Nan::Set(image, Nan::New(pixel_symbol), pixelEnumToSymbol(cimage.pixel));
 
 		Local<Value> pixelbuf;
 		size_t datalen = cimage.height * cimage.stride;
 		if (Nan::NewBuffer(datalen).ToLocal(&pixelbuf)) {
 			memcpy(Buffer::Data(pixelbuf), cimage.data, datalen);
-			image->Set(Nan::New(data_symbol), pixelbuf);
+			Nan::Set(image, Nan::New(data_symbol), pixelbuf);
 		}
 
 		return image;
@@ -118,21 +119,21 @@ namespace picha {
 	Local<Object> newJsImage(int w, int h, PixelMode pixel) {
 		int stride = NativeImage::row_stride(w, pixel);
 		Local<Object> image = Nan::New<Object>();
-		image->Set(Nan::New(width_symbol), Nan::New<Integer>(w));
-		image->Set(Nan::New(height_symbol), Nan::New<Integer>(h));
-		image->Set(Nan::New(stride_symbol), Nan::New<Integer>(stride));
-		image->Set(Nan::New(pixel_symbol), pixelEnumToSymbol(pixel));
+		Nan::Set(image, Nan::New(width_symbol), Nan::New<Integer>(w));
+		Nan::Set(image, Nan::New(height_symbol), Nan::New<Integer>(h));
+		Nan::Set(image, Nan::New(stride_symbol), Nan::New<Integer>(stride));
+		Nan::Set(image, Nan::New(pixel_symbol), pixelEnumToSymbol(pixel));
 
 		size_t datalen = h * stride;
 		Local<Value> jspixel;
 		if (Nan::NewBuffer(datalen).ToLocal(&jspixel))
-			image->Set(Nan::New(data_symbol), jspixel);
+			Nan::Set(image, Nan::New(data_symbol), jspixel);
 
 		return image;
 	}
 
 
-	void makeCallback(Local<Function> cb, const char * error, Handle<Value> v) {
+	void makeCallback(Local<Function> cb, const char * error, Local<Value> v) {
 		Local<Value> e;
 		Local<Value> argv[2] = { Nan::Undefined(), v };
 		if (error) {
@@ -148,11 +149,15 @@ namespace picha {
 			FatalException(try_catch);
 	}
 
-	v8::Local<v8::Function> SetPichaMethod(v8::Handle<v8::Object> o, const char * n, NAN_METHOD((*cb))) {
+	v8::Local<v8::Function> SetPichaMethod(v8::Local<v8::Object> o, const char * n, NAN_METHOD((*cb))) {
 		v8::Local<v8::String> name = Nan::New(n).ToLocalChecked();
-		v8::Local<v8::Function> fn = Nan::New<v8::FunctionTemplate>(cb)->GetFunction();
+		Nan::MaybeLocal<v8::Function> blah = Nan::GetFunction(Nan::New<v8::FunctionTemplate>(cb));
+		v8::Local<v8::Function> fn;
+		if (blah.IsEmpty())
+			return fn;
+		fn = blah.ToLocalChecked();
 		fn->SetName(name);
-		o->Set(name, fn);
+		Nan::Set(o, name, fn);
 		return fn;
 	}
 
@@ -161,7 +166,7 @@ namespace picha {
 #	undef SSYMBOL
 
 
-	void init(Handle<Object> target) {
+	void init(Local<Object> target) {
 #		define SSYMBOL(a) a ## _symbol.Reset(Nan::New<String>(# a).ToLocalChecked());
 		STATIC_SYMBOLS
 #		undef SSYMBOL
@@ -172,7 +177,7 @@ namespace picha {
 		v8::Local<v8::Function> fn;
 		v8::Local<v8::Object> obj;
 
-		target->Set(Nan::New("catalog").ToLocalChecked(), catalog);
+		Nan::Set(target, Nan::New("catalog").ToLocalChecked(), catalog);
 
 		Nan::SetMethod(target, "colorConvert", colorConvert);
 		Nan::SetMethod(target, "colorConvertSync", colorConvertSync);
@@ -185,17 +190,17 @@ namespace picha {
 		obj = Nan::New<v8::Object>();
 
 		fn = SetPichaMethod(target, "statJpeg", statJpeg);
-		obj->Set(Nan::New(stat_symbol), fn);
+		Nan::Set(obj, Nan::New(stat_symbol), fn);
 		fn = SetPichaMethod(target, "decodeJpeg", decodeJpeg);
-		obj->Set(Nan::New(decode_symbol), fn);
+		Nan::Set(obj, Nan::New(decode_symbol), fn);
 		fn = SetPichaMethod(target, "decodeJpegSync", decodeJpegSync);
-		obj->Set(Nan::New(decodeSync_symbol), fn);
+		Nan::Set(obj, Nan::New(decodeSync_symbol), fn);
 		fn = SetPichaMethod(target, "encodeJpeg", encodeJpeg);
-		obj->Set(Nan::New(encode_symbol), fn);
+		Nan::Set(obj, Nan::New(encode_symbol), fn);
 		fn = SetPichaMethod(target, "encodeJpegSync", encodeJpegSync);
-		obj->Set(Nan::New(encodeSync_symbol), fn);
+		Nan::Set(obj, Nan::New(encodeSync_symbol), fn);
 		encodes = pixelMap(getJpegEncodes());
-		obj->Set(Nan::New(encodes_symbol), encodes);
+		Nan::Set(obj, Nan::New(encodes_symbol), encodes);
 
 
 		Nan::Set(catalog, Nan::New("image/jpeg").ToLocalChecked(), obj);
@@ -207,17 +212,17 @@ namespace picha {
 		obj = Nan::New<v8::Object>();
 
 		fn = SetPichaMethod(target, "statPng", statPng);
-		obj->Set(Nan::New(stat_symbol), fn);
+		Nan::Set(obj, Nan::New(stat_symbol), fn);
 		fn = SetPichaMethod(target, "decodePng", decodePng);
-		obj->Set(Nan::New(decode_symbol), fn);
+		Nan::Set(obj, Nan::New(decode_symbol), fn);
 		fn = SetPichaMethod(target, "decodePngSync", decodePngSync);
-		obj->Set(Nan::New(decodeSync_symbol), fn);
+		Nan::Set(obj, Nan::New(decodeSync_symbol), fn);
 		fn = SetPichaMethod(target, "encodePng", encodePng);
-		obj->Set(Nan::New(encode_symbol), fn);
+		Nan::Set(obj, Nan::New(encode_symbol), fn);
 		fn = SetPichaMethod(target, "encodePngSync", encodePngSync);
-		obj->Set(Nan::New(encodeSync_symbol), fn);
+		Nan::Set(obj, Nan::New(encodeSync_symbol), fn);
 		encodes = pixelMap(getPngEncodes());
-		obj->Set(Nan::New(encodes_symbol), encodes);
+		Nan::Set(obj, Nan::New(encodes_symbol), encodes);
 
 		Nan::Set(catalog, Nan::New("image/png").ToLocalChecked(), obj);
 
@@ -228,17 +233,17 @@ namespace picha {
 		obj = Nan::New<v8::Object>();
 
 		fn = SetPichaMethod(target, "statTiff", statTiff);
-		obj->Set(Nan::New(stat_symbol), fn);
+		Nan::Set(obj, Nan::New(stat_symbol), fn);
 		fn = SetPichaMethod(target, "decodeTiff", decodeTiff);
-		obj->Set(Nan::New(decode_symbol), fn);
+		Nan::Set(obj, Nan::New(decode_symbol), fn);
 		fn = SetPichaMethod(target, "decodeTiffSync", decodeTiffSync);
-		obj->Set(Nan::New(decodeSync_symbol), fn);
+		Nan::Set(obj, Nan::New(decodeSync_symbol), fn);
 		fn = SetPichaMethod(target, "encodeTiff", encodeTiff);
-		obj->Set(Nan::New(encode_symbol), fn);
+		Nan::Set(obj, Nan::New(encode_symbol), fn);
 		fn = SetPichaMethod(target, "encodeTiffSync", encodeTiffSync);
-		obj->Set(Nan::New(encodeSync_symbol), fn);
+		Nan::Set(obj, Nan::New(encodeSync_symbol), fn);
 		encodes = pixelMap(getTiffEncodes());
-		obj->Set(Nan::New(encodes_symbol), encodes);
+		Nan::Set(obj, Nan::New(encodes_symbol), encodes);
 
 		Nan::Set(catalog, Nan::New("image/tiff").ToLocalChecked(), obj);
 
@@ -249,17 +254,17 @@ namespace picha {
 		obj = Nan::New<v8::Object>();
 
 		fn = SetPichaMethod(target, "statWebP", statWebP);
-		obj->Set(Nan::New(stat_symbol), fn);
+		Nan::Set(obj, Nan::New(stat_symbol), fn);
 		fn = SetPichaMethod(target, "decodeWebP", decodeWebP);
-		obj->Set(Nan::New(decode_symbol), fn);
+		Nan::Set(obj, Nan::New(decode_symbol), fn);
 		fn = SetPichaMethod(target, "decodeWebPSync", decodeWebPSync);
-		obj->Set(Nan::New(decodeSync_symbol), fn);
+		Nan::Set(obj, Nan::New(decodeSync_symbol), fn);
 		fn = SetPichaMethod(target, "encodeWebP", encodeWebP);
-		obj->Set(Nan::New(encode_symbol), fn);
+		Nan::Set(obj, Nan::New(encode_symbol), fn);
 		fn = SetPichaMethod(target, "encodeWebPSync", encodeWebPSync);
-		obj->Set(Nan::New(encodeSync_symbol), fn);
+		Nan::Set(obj, Nan::New(encodeSync_symbol), fn);
 		encodes = pixelMap(getWebpEncodes());
-		obj->Set(Nan::New(encodes_symbol), encodes);
+		Nan::Set(obj, Nan::New(encodes_symbol), encodes);
 
 		Nan::Set(catalog, Nan::New("image/webp").ToLocalChecked(), obj);
 

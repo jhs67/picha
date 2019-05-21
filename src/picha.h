@@ -69,7 +69,7 @@ namespace picha {
 #	undef SSYMBOL
 
 	inline Local<String> makeSymbol(const char *n) { return Nan::New(n).ToLocalChecked(); }
-	void makeCallback(Local<Function> cb, const char * error, Handle<Value> v);
+	void makeCallback(Local<Function> cb, const char * error, Local<Value> v);
 
 
 	//--------------------------------------------------------------------------------------------------
@@ -220,8 +220,8 @@ namespace picha {
 	Local<Object> newJsImage(int w, int h, PixelMode pixel);
 	NativeImage newNativeImage(int w, int h, PixelMode pixel);
 	void freeNativeImage(NativeImage& image);
-	PixelMode pixelSymbolToEnum(Handle<Value> obj);
-	Handle<Value> pixelEnumToSymbol(PixelMode t);
+	PixelMode pixelSymbolToEnum(Local<Value> obj);
+	Local<Value> pixelEnumToSymbol(PixelMode t);
 
 }
 

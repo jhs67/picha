@@ -187,7 +187,7 @@ namespace picha {
 		size_t srclen = Buffer::Length(srcbuf);
 
 		int idx = 0;
-		Local<Value> jidx = opts->Get(Nan::New(index_symbol));
+		Local<Value> jidx = Nan::Get(opts, Nan::New(index_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		if (jidx->IsNumber())
 			idx = jidx->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
 
@@ -226,7 +226,7 @@ namespace picha {
 		size_t srclen = Buffer::Length(srcbuf);
 
 		int idx = 0;
-		Local<Value> jidx = opts->Get(Nan::New(index_symbol));
+		Local<Value> jidx = Nan::Get(opts, Nan::New(index_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		if (jidx->IsNumber())
 			idx = jidx->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
 
@@ -266,9 +266,9 @@ namespace picha {
 			return;
 
 		Local<Object> stat = Nan::New<Object>();
-		stat->Set(Nan::New(width_symbol), Nan::New<Integer>(reader.width()));
-		stat->Set(Nan::New(height_symbol), Nan::New<Integer>(reader.height()));
-		stat->Set(Nan::New(pixel_symbol), pixelEnumToSymbol(RGBA_PIXEL));
+		Nan::Set(stat, Nan::New(width_symbol), Nan::New<Integer>(reader.width()));
+		Nan::Set(stat, Nan::New(height_symbol), Nan::New<Integer>(reader.height()));
+		Nan::Set(stat, Nan::New(pixel_symbol), pixelEnumToSymbol(RGBA_PIXEL));
 		info.GetReturnValue().Set(stat);
 	}
 
@@ -419,7 +419,7 @@ namespace picha {
 
 		const int TiffCompressionCount = sizeof(TiffCompressionModes) / sizeof(TiffCompressionModes[0]);
 
-		bool getTiffCompression(Handle<Value> jcomp, int& comp) {
+		bool getTiffCompression(Local<Value> jcomp, int& comp) {
 			for (int i = 0; i < TiffCompressionCount; ++i) {
 				if (jcomp->StrictEquals(Nan::New(*TiffCompressionModes[i].symbol))) {
 					comp = TiffCompressionModes[i].tag;
@@ -444,7 +444,7 @@ namespace picha {
 		Local<Function> cb = Local<Function>::Cast(info[2]);
 
 		int comp = COMPRESSION_LZW;
-		if (opts->Has(Nan::New(compression_symbol)) && !getTiffCompression(opts->Get(Nan::New(compression_symbol)), comp)) {
+		if (Nan::Has(opts, Nan::New(compression_symbol)).FromMaybe(false) && !getTiffCompression(Nan::Get(opts, Nan::New(compression_symbol)).FromMaybe(Local<Value>(Nan::Undefined())), comp)) {
 			Nan::ThrowError("invalid compression option");
 			return;
 		}
@@ -457,7 +457,7 @@ namespace picha {
 			return;
 		}
 
-		ctx->buffer.Reset(img->Get(Nan::New(data_symbol)));
+		ctx->buffer.Reset(Nan::Get(img, Nan::New(data_symbol)).FromMaybe(Local<Value>(Nan::Undefined())));
 		ctx->cb.Reset(cb);
 		ctx->comp = comp;
 
@@ -479,7 +479,7 @@ namespace picha {
 		Local<Object> opts = mopts.ToLocalChecked();
 
 		int comp = COMPRESSION_LZW;
-		if (opts->Has(Nan::New(compression_symbol)) && !getTiffCompression(opts->Get(Nan::New(compression_symbol)), comp)) {
+		if (Nan::Has(opts, Nan::New(compression_symbol)).FromMaybe(false) && !getTiffCompression(Nan::Get(opts, Nan::New(compression_symbol)).FromMaybe(Local<Value>(Nan::Undefined())), comp)) {
 			Nan::ThrowError("invalid compression option");
 			return;
 		}

@@ -163,7 +163,7 @@ namespace picha {
 		&cubic_symbol, &lanczos_symbol, &catmulrom_symbol, &mitchel_symbol, &box_symbol, &triangle_symbol
 	};
 
-	ResizeFilterTag symbolToResizeFilter(Handle<Value> s) {
+	ResizeFilterTag symbolToResizeFilter(Local<Value> s) {
 		for (int i = 0; i < InvalidFilterTag; ++i)
 			if (s->StrictEquals(Nan::New(*resizeFilterSymbols[i])))
 				return static_cast<ResizeFilterTag>(i);
@@ -176,11 +176,11 @@ namespace picha {
 		float width;
 	};
 
-	bool getResizeOptions(ResizeOptions& s, Handle<Object> opts) {
+	bool getResizeOptions(ResizeOptions& s, Local<Object> opts) {
 		Local<Value> v = opts->Get(Nan::GetCurrentContext(), Nan::New(filter_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		if (!v->IsUndefined()) {
 			s.width = 1.0f;
-			s.filter = symbolToResizeFilter(opts->Get(Nan::New(filter_symbol)));
+			s.filter = symbolToResizeFilter(Nan::Get(opts, Nan::New(filter_symbol)).FromMaybe(Local<Value>(Nan::Undefined())));
 			if (s.filter == InvalidFilterTag) {
 				Nan::ThrowError("invalid filter mode");
 				return false;
@@ -338,8 +338,8 @@ namespace picha {
 			return;
 		}
 
-		int width = opts->Get(Nan::New(width_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
-		int height = opts->Get(Nan::New(height_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		int width = Nan::Get(opts, Nan::New(width_symbol)).FromMaybe(Local<Value>(Nan::Undefined()))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		int height = Nan::Get(opts, Nan::New(height_symbol)).FromMaybe(Local<Value>(Nan::Undefined()))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
 		if (width <= 0 || height <= 0) {
 			Nan::ThrowError("invalid dimensions");
 			return;
@@ -352,7 +352,7 @@ namespace picha {
 
 		ResizeContext * ctx = new ResizeContext;
 		Local<Object> jsdst = newJsImage(width, height, src.pixel);
-		ctx->srcbuffer.Reset(img->Get(Nan::New(data_symbol)));
+		ctx->srcbuffer.Reset(Nan::Get(img, Nan::New(data_symbol)).FromMaybe(Local<Value>(Nan::Undefined())));
 		ctx->dstimage.Reset(jsdst);
 		ctx->cb.Reset(cb);
 		ctx->dst = jsImageToNativeImage(jsdst);
@@ -382,8 +382,8 @@ namespace picha {
 			Nan::ThrowError("invalid image");
 		}
 
-		int width = opts->Get(Nan::New(width_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
-		int height = opts->Get(Nan::New(height_symbol))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		int width = Nan::Get(opts, Nan::New(width_symbol)).FromMaybe(Local<Value>(Nan::Undefined()))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
+		int height = Nan::Get(opts, Nan::New(height_symbol)).FromMaybe(Local<Value>(Nan::Undefined()))->Uint32Value(Nan::GetCurrentContext()).FromMaybe(0);
 		if (width <= 0 || height <= 0) {
 			Nan::ThrowError("invalid dimensions");
 		}

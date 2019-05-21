@@ -131,9 +131,9 @@ namespace picha {
 			return;
 
 		Local<Object> stat = Nan::New<Object>();
-		stat->Set(Nan::New(width_symbol), Nan::New<Integer>(feat.width));
-		stat->Set(Nan::New(height_symbol), Nan::New<Integer>(feat.height));
-		stat->Set(Nan::New(pixel_symbol), pixelEnumToSymbol(feat.has_alpha ? RGBA_PIXEL : RGB_PIXEL));
+		Nan::Set(stat, Nan::New(width_symbol), Nan::New<Integer>(feat.width));
+		Nan::Set(stat, Nan::New(height_symbol), Nan::New<Integer>(feat.height));
+		Nan::Set(stat, Nan::New(pixel_symbol), pixelEnumToSymbol(feat.has_alpha ? RGBA_PIXEL : RGB_PIXEL));
 		info.GetReturnValue().Set(stat);
 	}
 
@@ -141,7 +141,7 @@ namespace picha {
 
 	namespace {
 
-		double getQuality(Handle<Value> v, double def) {
+		double getQuality(Local<Value> v, double def) {
 			double quality = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 			if (quality != quality)
 				quality = def;
@@ -152,12 +152,12 @@ namespace picha {
 			return quality;
 		}
 
-		bool setupWebPConfig(WebPConfig& config, Handle<Object> opts) {
-			float quality = getQuality(opts->Get(Nan::New(quality_symbol)), 85);
+		bool setupWebPConfig(WebPConfig& config, Local<Object> opts) {
+			float quality = getQuality(Nan::Get(opts, Nan::New(quality_symbol)).FromMaybe(Local<Value>(Nan::Undefined())), 85);
 
 			bool r = false;
-			if (opts->Has(Nan::New(preset_symbol))) {
-				Local<Value> v = opts->Get(Nan::New(preset_symbol));
+			if (Nan::Has(opts, Nan::New(preset_symbol)).FromMaybe(false)) {
+				Local<Value> v = Nan::Get(opts, Nan::New(preset_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 				if (v->StrictEquals(Nan::New(default_symbol))) {
 					r = WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
 				}
@@ -185,11 +185,11 @@ namespace picha {
 				r = WebPConfigPreset(&config, WEBP_PRESET_DEFAULT, quality);
 			}
 
-			if (r && opts->Has(Nan::New(alphaQuality_symbol)))
-				config.alpha_quality = getQuality(opts->Get(Nan::New(alphaQuality_symbol)), 100);
+			if (r && Nan::Has(opts, Nan::New(alphaQuality_symbol)).FromMaybe(false))
+				config.alpha_quality = getQuality(Nan::Get(opts, Nan::New(alphaQuality_symbol)).FromMaybe(Local<Value>(Nan::Undefined())), 100);
 
-			if (r && opts->Has(Nan::New(exact_symbol)))
-				config.exact = opts->Get(Nan::New(exact_symbol))->BooleanValue(Nan::GetCurrentContext()).FromMaybe(false);
+			if (r && Nan::Has(opts, Nan::New(exact_symbol)).FromMaybe(false))
+				config.exact = Nan::Get(opts, Nan::New(exact_symbol)).FromMaybe(Local<Value>(Nan::Undefined()))->ToBoolean(v8::Isolate::GetCurrent())->Value();
 
 			return r;
 		}
@@ -326,7 +326,7 @@ namespace picha {
 			return;
 		}
 
-		ctx->buffer.Reset(img->Get(Nan::New(data_symbol)));
+		ctx->buffer.Reset(Nan::Get(img, Nan::New(data_symbol)).FromMaybe(Local<Value>(Nan::Undefined())));
 		ctx->cb.Reset(cb);
 		ctx->image = jsImageToNativeImage(img);
 		if (!ctx->image.data) {

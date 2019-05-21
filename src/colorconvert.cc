@@ -3,16 +3,16 @@
 
 namespace picha {
 
-	void getSettings(ColorSettings& s, Handle<Object> opts) {
+	void getSettings(ColorSettings& s, Local<Object> opts) {
 		double d;
 		Local<Value> v;
-		v = opts->Get(Nan::New(redWeight_symbol));
+		v = Nan::Get(opts, Nan::New(redWeight_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		d = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 		if (d == d) s.rFactor = d;
-		v = opts->Get(Nan::New(greenWeight_symbol));
+		v = Nan::Get(opts, Nan::New(greenWeight_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		d = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 		if (d == d) s.gFactor = d;
-		v = opts->Get(Nan::New(blueWeight_symbol));
+		v = Nan::Get(opts, Nan::New(blueWeight_symbol)).FromMaybe(Local<Value>(Nan::Undefined()));
 		d = v->NumberValue(Nan::GetCurrentContext()).FromMaybe(0);
 		if (d == d) s.bFactor = d;
 		float n = 1.0f / (s.rFactor + s.gFactor + s.bFactor);
@@ -232,7 +232,7 @@ namespace picha {
 			return;
 		}
 
-		PixelMode toPixel = pixelSymbolToEnum(opts->Get(Nan::New(pixel_symbol)));
+		PixelMode toPixel = pixelSymbolToEnum(Nan::Get(opts, Nan::New(pixel_symbol)).FromMaybe(Local<Value>(Nan::Undefined())));
 		if (toPixel == INVALID_PIXEL) {
 			Nan::ThrowError("expected pixel mode");
 			return;
@@ -273,7 +273,7 @@ namespace picha {
 			return;
 		}
 
-		PixelMode toPixel = pixelSymbolToEnum(opts->Get(Nan::New(pixel_symbol)));
+		PixelMode toPixel = pixelSymbolToEnum(Nan::Get(opts, Nan::New(pixel_symbol)).FromMaybe(Local<Value>(Nan::Undefined())));
 		if (toPixel == INVALID_PIXEL) {
 			Nan::ThrowError("expected pixel mode");
 			return;
