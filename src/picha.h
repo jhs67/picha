@@ -5,6 +5,7 @@
 #include <v8.h>
 #include <node.h>
 #include <nan.h>
+#include <limits>
 
 namespace picha {
 
