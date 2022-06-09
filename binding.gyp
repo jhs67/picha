@@ -54,13 +54,13 @@
 						'WITH_JPEG',
 					],
 					'cflags': [
-						'<!@(pkg-config libjpeg --cflags)',
+						'<!@(pkg-config libjpeg --cflags --silence-errors)',
 					],
 					'ldflags': [
-						'<!@(pkg-config libjpeg --libs-only-L --libs-only-other)',
+						'<!@(pkg-config libjpeg --libs-only-L --libs-only-other --silence-errors)',
 					],
 					'libraries': [
-						'<!@(pkg-config libjpeg --libs-only-l)',
+						'-ljpeg <!@(pkg-config libjpeg --libs-only-l --silence-errors)',
 					],
 					'xcode_settings': {
 						'OTHER_CFLAGS': [ '<!@(pkg-config libjpeg --cflags)' ],
