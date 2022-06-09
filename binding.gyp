@@ -53,9 +53,19 @@
 					'defines': [
 						'WITH_JPEG',
 					],
-					'libraries': [
-						'-ljpeg',
+					'cflags': [
+						'<!@(pkg-config libjpeg --cflags --silence-errors)',
 					],
+					'ldflags': [
+						'<!@(pkg-config libjpeg --libs-only-L --libs-only-other --silence-errors)',
+					],
+					'libraries': [
+						'-ljpeg <!@(pkg-config libjpeg --libs-only-l --silence-errors)',
+					],
+					'xcode_settings': {
+						'OTHER_CFLAGS': [ '<!@(pkg-config libjpeg --cflags)' ],
+						'OTHER_LDFLAGS': [ '<!@(pkg-config libjpeg --libs-only-L --libs-only-other)' ],
+					},
 				}],
 				['with_tiff == "yes"', {
 					'sources': [
