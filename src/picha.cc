@@ -134,7 +134,6 @@ namespace picha {
 
 
 	void makeCallback(Local<Function> cb, const char * error, Local<Value> v) {
-		Local<Value> e;
 		Local<Value> argv[2] = { Nan::Undefined(), v };
 		if (error) {
 			argv[0] = Nan::Error(error);

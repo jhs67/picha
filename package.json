@@ -24,7 +24,7 @@
     "nan": "^2.15.0"
   },
   "devDependencies": {
-    "mocha": "^9.1.4"
+    "mocha": "^10.6.0"
   },
   "author": "Jon Spencer <jon@jonspencer.ca>",
   "license": "MIT",

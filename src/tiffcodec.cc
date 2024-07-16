@@ -62,14 +62,14 @@ namespace picha {
 		void errorOut(const char * e) { error = e; }
 		static tmsize_t readProc(thandle_t h, void* buf, tmsize_t size);
 		static tmsize_t writeProc(thandle_t h, void* buf, tmsize_t size) { return 0; }
-		static uint64 seekProc(thandle_t h, uint64 off, int whence);
+		static uint64_t seekProc(thandle_t h, uint64_t off, int whence);
 		static toff_t sizeProc(thandle_t h) { return reinterpret_cast<TiffReader*>(h)->datalen; }
 		static int closeProc(thandle_t) { return 0; }
 		static int mapProc(thandle_t, void**, toff_t*) { return 0; }
 		static void unmapProc(thandle_t, void* base, toff_t size) {}
 	};
 
-	uint64 TiffReader::seekProc(thandle_t h, uint64 off, int whence) {
+	uint64_t TiffReader::seekProc(thandle_t h, uint64_t off, int whence) {
 		TiffReader * r = reinterpret_cast<TiffReader*>(h);
 		switch (whence) {
 			case SEEK_SET:
@@ -114,14 +114,14 @@ namespace picha {
 	}
 
 	int TiffReader::width() {
-		uint32 w;
+		uint32_t w;
 		if (!error.empty() || tiff == 0) return 0;
 		TIFFGetField(tiff, TIFFTAG_IMAGEWIDTH, &w);
 		return w;
 	}
 
 	int TiffReader::height() {
-		uint32 w;
+		uint32_t w;
 		if (!error.empty() || tiff == 0) return 0;
 		TIFFGetField(tiff, TIFFTAG_IMAGELENGTH, &w);
 		return w;
@@ -129,7 +129,7 @@ namespace picha {
 
 	void TiffReader::decode(const NativeImage &dst) {
 		assert(dst.pixel == RGBA_PIXEL);
-		uint32 * p = reinterpret_cast<uint32*>(dst.data);
+		uint32_t * p = reinterpret_cast<uint32_t*>(dst.data);
 		if (!TIFFReadRGBAImageOriented(tiff, dst.width, dst.height, p, ORIENTATION_TOPLEFT, 0)) {
 			errorOut("failed to read image data");
 			return;
@@ -287,7 +287,7 @@ namespace picha {
 		void errorOut(const char * e) { error = e; }
 		static tmsize_t readProc(thandle_t h, void* buf, tmsize_t size) { return 0; }
 		static tmsize_t writeProc(thandle_t h, void* buf, tmsize_t size);
-		static uint64 seekProc(thandle_t h, uint64 off, int whence);
+		static uint64_t seekProc(thandle_t h, uint64_t off, int whence);
 		static toff_t sizeProc(thandle_t h);
 		static int closeProc(thandle_t) { return 0; }
 		static int mapProc(thandle_t, void**, toff_t*) { return 0; }
@@ -300,7 +300,7 @@ namespace picha {
 		return size;
 	}
 
-	uint64 TiffWriter::seekProc(thandle_t h, uint64 off, int whence) {
+	uint64_t TiffWriter::seekProc(thandle_t h, uint64_t off, int whence) {
 		TiffWriter * w = reinterpret_cast<TiffWriter*>(h);
 		w->buffer.seek(off, whence);
 		return w->buffer.cursor;
@@ -321,14 +321,14 @@ namespace picha {
 		}
 
 		int sampleperpixel = pixelChannels(image.pixel);
-		TIFFSetField(tiff, TIFFTAG_IMAGEWIDTH, (uint32)image.width);
-		TIFFSetField(tiff, TIFFTAG_IMAGELENGTH, (uint32)image.height);
-		TIFFSetField(tiff, TIFFTAG_SAMPLESPERPIXEL, (uint16)sampleperpixel);
-		TIFFSetField(tiff, TIFFTAG_BITSPERSAMPLE, (uint16)(pixelBytes(image.pixel) / sampleperpixel * 8));
-		TIFFSetField(tiff,TIFFTAG_COMPRESSION,((uint16)comp));
+		TIFFSetField(tiff, TIFFTAG_IMAGEWIDTH, (uint32_t)image.width);
+		TIFFSetField(tiff, TIFFTAG_IMAGELENGTH, (uint32_t)image.height);
+		TIFFSetField(tiff, TIFFTAG_SAMPLESPERPIXEL, (uint16_t)sampleperpixel);
+		TIFFSetField(tiff, TIFFTAG_BITSPERSAMPLE, (uint16_t)(pixelBytes(image.pixel) / sampleperpixel * 8));
+		TIFFSetField(tiff,TIFFTAG_COMPRESSION,((uint16_t)comp));
 		TIFFSetField(tiff, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
-		TIFFSetField(tiff, TIFFTAG_PLANARCONFIG, (uint16)PLANARCONFIG_CONTIG);
-		TIFFSetField(tiff, TIFFTAG_PHOTOMETRIC, (uint16)(sampleperpixel < 3 ? PHOTOMETRIC_MINISBLACK : PHOTOMETRIC_RGB));
+		TIFFSetField(tiff, TIFFTAG_PLANARCONFIG, (uint16_t)PLANARCONFIG_CONTIG);
+		TIFFSetField(tiff, TIFFTAG_PHOTOMETRIC, (uint16_t)(sampleperpixel < 3 ? PHOTOMETRIC_MINISBLACK : PHOTOMETRIC_RGB));
 
 		for (int i = 0; i < image.height; ++i) {
 			if (!TIFFWriteScanline(tiff, image.row(i), i))
