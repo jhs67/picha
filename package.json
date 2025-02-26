@@ -20,8 +20,8 @@
     "crop"
   ],
   "dependencies": {
-    "debug": "^4.3.3",
-    "nan": "^2.15.0"
+    "debug": "^4.4.0",
+    "nan": "^2.22.1"
   },
   "devDependencies": {
     "mocha": "^10.6.0"
